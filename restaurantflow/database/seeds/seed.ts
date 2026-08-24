@@ -11,7 +11,14 @@ const connectionString =
 
 export async function runSeed(): Promise<void> {
   console.log('🌱 Starting Database Seeding with updated authentic menu...');
-  const pool = new Pool({ connectionString });
+  const isLocalDb = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const pool = new Pool({
+    connectionString,
+    ssl: isLocalDb ? false : { rejectUnauthorized: false },
+    max: 5,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 10000,
+  });
   const client = await pool.connect();
 
   try {

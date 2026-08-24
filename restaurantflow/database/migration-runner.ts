@@ -13,11 +13,14 @@ export async function runMigrations(): Promise<void> {
   console.log('🔄 Starting Database Migrations...');
   console.log(`📡 Connecting to PostgreSQL at: ${connectionString.replace(/:[^:@]+@/, ':****@')}`);
 
+  const isLocalDb = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+
   const pool = new Pool({
     connectionString,
+    ssl: isLocalDb ? false : { rejectUnauthorized: false },
     max: 5,
     idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000,
   });
 
   let client: PoolClient | null = null;
