@@ -23,6 +23,7 @@ services:
           type: web
           name: restaurantflow-frontend
           property: host
+          value: https://${host}
 
   # 2. Frontend SPA + PWA Application
   - type: web
@@ -36,10 +37,23 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: restaurantflow-backend
+          property: host
+          value: https://${host}/api
+      - key: VITE_SOCKET_URL
+        fromService:
+          type: web
+          name: restaurantflow-backend
+          property: host
+          value: https://${host}
 
 databases:
   # 3. Free Managed Cloud PostgreSQL
   - name: restaurantflow-db
     plan: free
     databaseName: restaurantflow
-    user: postgres
+    user: restaurantflow_user
