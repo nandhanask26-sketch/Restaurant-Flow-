@@ -20,7 +20,7 @@ async function bootstrap(): Promise<void> {
 
   // Start HTTP Server
   const PORT = env.PORT;
-  httpServer.listen(PORT, () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     logger.info('====================================================');
     logger.info(`🚀 RestaurantFlow Backend Server running on port ${PORT}`);
     logger.info(`📡 Environment: ${env.NODE_ENV}`);
