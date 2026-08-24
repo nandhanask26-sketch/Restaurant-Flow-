@@ -29,7 +29,6 @@ services:
   - type: web
     name: restaurantflow-frontend
     runtime: static
-    plan: free
     rootDir: restaurantflow/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
