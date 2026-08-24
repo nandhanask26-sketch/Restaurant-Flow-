@@ -246,11 +246,174 @@ export class AuthService {
     }
   }
 
+  // Customer Login OTP Cache (5 min TTL)
+  private static loginOtpCache = new Map<
+    string,
+    { code: string; expiresAt: number; channel: 'EMAIL' | 'PHONE'; target: string }
+  >();
+
   // Security Verification OTP Cache (5 min TTL)
   private static otpCache = new Map<
     string,
     { code: string; expiresAt: number; channel: 'EMAIL' | 'PHONE'; target: string }
   >();
+
+  /**
+   * Dispatches 6-digit login verification code to customer's Email or Phone Number
+   */
+  async sendLoginOtp(identifier: string): Promise<{
+    channel: 'EMAIL' | 'PHONE';
+    maskedTarget: string;
+    target: string;
+    isExistingUser: boolean;
+    debugCode?: string;
+  }> {
+    if (!identifier || !identifier.trim()) {
+      throw new BadRequestError('Please provide a valid email address or phone number.');
+    }
+
+    const cleanInput = identifier.trim();
+    const isEmail = cleanInput.includes('@');
+    const channel: 'EMAIL' | 'PHONE' = isEmail ? 'EMAIL' : 'PHONE';
+
+    let user: User | null = null;
+    let targetFormatted = cleanInput;
+
+    if (isEmail) {
+      targetFormatted = cleanInput.toLowerCase();
+      user = await this.userRepo.findByEmail(targetFormatted);
+    } else {
+      const cleanDigits = cleanInput.replace(/\D/g, '');
+      if (cleanDigits.length < 7) {
+        throw new BadRequestError('Please enter a valid phone number (minimum 7 digits).');
+      }
+      targetFormatted = cleanDigits;
+      user = await this.userRepo.findByPhone(targetFormatted);
+    }
+
+    // Generate authoritative 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    // Cache by normalized target
+    AuthService.loginOtpCache.set(targetFormatted, {
+      code,
+      expiresAt,
+      channel,
+      target: targetFormatted,
+    });
+
+    const userName = user?.fullName || 'Customer';
+
+    // Dispatch via real Email or SMS service
+    if (channel === 'EMAIL') {
+      await EmailService.sendLoginOtpEmail(targetFormatted, userName, code);
+    } else {
+      await SmsService.sendLoginOtpSms(targetFormatted, code);
+    }
+
+    console.log(`\n======================================================`);
+    console.log(`🔑 [CUSTOMER LOGIN VERIFICATION CODE DISPATCHED]`);
+    console.log(`Target: ${targetFormatted} (${channel})`);
+    console.log(`Customer: ${userName}`);
+    console.log(`6-Digit Verification Code: ${code}`);
+    console.log(`Expires in: 5 minutes`);
+    console.log(`======================================================\n`);
+
+    // Mask the target for privacy on UI
+    let maskedTarget = targetFormatted;
+    if (channel === 'EMAIL') {
+      const [name, domain] = targetFormatted.split('@');
+      maskedTarget = `${name.slice(0, 2)}••••@${domain}`;
+    } else {
+      maskedTarget = `••••••${targetFormatted.slice(-4)}`;
+    }
+
+    return {
+      channel,
+      maskedTarget,
+      target: targetFormatted,
+      isExistingUser: !!user,
+      debugCode: process.env.NODE_ENV === 'development' ? code : undefined,
+    };
+  }
+
+  /**
+   * Verifies 6-digit login OTP and creates/authenticates the customer session
+   */
+  async verifyLoginOtp(
+    identifier: string,
+    code: string,
+    fullName?: string
+  ): Promise<{ user: User; accessToken: string; refreshToken: string; isNewUser: boolean }> {
+    if (!identifier || !code) {
+      throw new BadRequestError('Identifier and verification code are required.');
+    }
+
+    const cleanInput = identifier.trim();
+    const isEmail = cleanInput.includes('@');
+    const targetKey = isEmail ? cleanInput.toLowerCase() : cleanInput.replace(/\D/g, '');
+
+    const record = AuthService.loginOtpCache.get(targetKey);
+    if (!record) {
+      throw new BadRequestError('No active verification code found. Please request a new code.');
+    }
+
+    if (Date.now() > record.expiresAt) {
+      AuthService.loginOtpCache.delete(targetKey);
+      throw new BadRequestError('Verification code has expired. Please request a new code.');
+    }
+
+    if (record.code !== code.trim()) {
+      throw new BadRequestError('Invalid verification code. Please check and try again.');
+    }
+
+    // Clear OTP after successful use
+    AuthService.loginOtpCache.delete(targetKey);
+
+    // Look up existing user
+    let user: User | null = null;
+    if (record.channel === 'EMAIL') {
+      user = await this.userRepo.findByEmail(targetKey);
+    } else {
+      user = await this.userRepo.findByPhone(targetKey);
+    }
+
+    let isNewUser = false;
+
+    // If new user, auto-register seamless customer profile
+    if (!user) {
+      isNewUser = true;
+      const defaultName = fullName?.trim() || (isEmail ? targetKey.split('@')[0] : `Customer ${targetKey.slice(-4)}`);
+      const email = isEmail ? targetKey : `user_${targetKey}@restaurantflow.local`;
+      const phone = !isEmail ? targetKey : `+910000000000`;
+      const randomPasswordHash = await bcrypt.hash(Math.random().toString(36), 10);
+
+      user = await this.userRepo.create({
+        fullName: defaultName,
+        email,
+        phone,
+        passwordHash: randomPasswordHash,
+        role: 'CUSTOMER',
+      });
+    }
+
+    // Generate authentication tokens
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await this.userRepo.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
+
+    const { passwordHash: _, ...cleanUser } = user as any;
+    return { user: cleanUser as User, accessToken, refreshToken, isNewUser };
+  }
 
   async sendSecurityOtp(
     userId: string,

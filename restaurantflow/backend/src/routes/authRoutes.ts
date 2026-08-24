@@ -29,6 +29,10 @@ router.post(
 
 router.post('/login', authRateLimiter, validate(loginSchema), authController.login);
 
+router.post('/otp/send', authRateLimiter, authController.sendLoginOtp);
+
+router.post('/otp/verify', authRateLimiter, authController.verifyLoginOtp);
+
 router.post('/refresh', validate(refreshTokenSchema), authController.refreshToken);
 
 router.post('/logout', authMiddleware, authController.logout);

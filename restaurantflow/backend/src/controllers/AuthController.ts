@@ -54,6 +54,30 @@ export class AuthController {
     }
   };
 
+  sendLoginOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { identifier } = req.body;
+      const result = await this.authService.sendLoginOtp(identifier);
+      sendSuccess(res, result, `Verification code dispatched to your ${result.channel.toLowerCase()}`);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  verifyLoginOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { identifier, code, fullName } = req.body;
+      const result = await this.authService.verifyLoginOtp(identifier, code, fullName);
+      sendSuccess(
+        res,
+        result,
+        result.isNewUser ? 'Welcome to RestaurantFlow! Account created successfully.' : 'Login verified successfully'
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
   refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { refreshToken } = req.body;
