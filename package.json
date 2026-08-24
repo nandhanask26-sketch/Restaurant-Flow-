@@ -1,0 +1,17 @@
+{
+  "name": "cafetaria-mgt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cafetaria Management System - Root Workspace",
+  "scripts": {
+    "dev": "npm --prefix restaurantflow/frontend run dev",
+    "dev:backend": "npm --prefix restaurantflow/backend run dev",
+    "dev:frontend": "npm --prefix restaurantflow/frontend run dev",
+    "build:backend": "npm --prefix restaurantflow/backend run build",
+    "build:frontend": "npm --prefix restaurantflow/frontend run build",
+    "build": "npm --prefix restaurantflow run build",
+    "migrate": "npm --prefix restaurantflow/backend run migrate",
+    "seed": "npm --prefix restaurantflow/backend run seed",
+    "test": "npm --prefix restaurantflow/backend test"
+  }
+}
