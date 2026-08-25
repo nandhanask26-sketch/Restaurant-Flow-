@@ -11,10 +11,20 @@ import {
   Lock, 
   Eye, 
   EyeOff, 
-  Smartphone
+  Smartphone,
+  X,
+  User,
+  Plus,
+  ShieldCheck
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+
+interface GoogleAccountOption {
+  name: string;
+  email: string;
+  avatar: string;
+}
 
 export const CustomerLogin: React.FC = () => {
   // Primary Method: 'MOBILE' | 'EMAIL'
@@ -36,13 +46,31 @@ export const CustomerLogin: React.FC = () => {
   const [maskedTarget, setMaskedTarget] = useState('');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
 
+  // Google Account Picker Modal State
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
+
+  // Suggested Google accounts
+  const googleAccounts: GoogleAccountOption[] = [
+    {
+      name: 'Nandhana S K',
+      email: 'nandhanask26@gmail.com',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Nandhana',
+    },
+    {
+      name: 'Customer Account',
+      email: 'customer@restaurantflow.com',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Customer',
+    },
+  ];
+
   // Countdown timer
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
   // UI state
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -88,7 +116,11 @@ export const CustomerLogin: React.FC = () => {
       setCountdown(60);
       setCanResend(false);
       setOtpDigits(['', '', '', '', '', '']);
-      setSuccessMsg(`Verification code dispatched to your ${channel === 'EMAIL' ? 'email inbox' : 'mobile phone'}!`);
+      setSuccessMsg(
+        channel === 'EMAIL'
+          ? `Automatic verification code dispatched to your verified email: ${maskedTarget}`
+          : `Automatic OTP dispatched to your mobile number: ${maskedTarget}`
+      );
 
       setTimeout(() => {
         inputRefs.current[0]?.focus();
@@ -100,7 +132,18 @@ export const CustomerLogin: React.FC = () => {
     }
   };
 
-  // 2. Handle OTP input cells
+  // 2. Select Google Account -> Automatically dispatch verification code to that Google email
+  const handleSelectGoogleAccount = (selectedEmail: string) => {
+    setGoogleModalOpen(false);
+    setShowCustomGoogleInput(false);
+    setCustomGoogleEmail('');
+    setAuthMethod('EMAIL');
+    setEmailMode('OTP');
+    setEmailAddress(selectedEmail);
+    handleSendOtp(selectedEmail, 'EMAIL');
+  };
+
+  // 3. Handle OTP input cells
   const handleOtpChange = (index: number, value: string) => {
     const cleanVal = value.replace(/\D/g, '').slice(-1);
     const newDigits = [...otpDigits];
@@ -133,7 +176,7 @@ export const CustomerLogin: React.FC = () => {
     }
   };
 
-  // 3. Verify OTP
+  // 4. Verify OTP
   const handleVerifyOtp = async (codeToVerify?: string) => {
     const code = codeToVerify || otpDigits.join('');
     if (code.length !== 6) {
@@ -160,7 +203,7 @@ export const CustomerLogin: React.FC = () => {
     }
   };
 
-  // 4. Email Password Sign In
+  // 5. Email Password Sign In
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -184,32 +227,6 @@ export const CustomerLogin: React.FC = () => {
     }
   };
 
-  // 5. Google Sign In
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    setError(null);
-
-    try {
-      // In production/cloud, trigger Google profile session or mock OAuth
-      const sampleEmail = 'customer@gmail.com';
-      const sampleName = 'Google Customer';
-
-      const { data } = await apiClient.post('/auth/google', {
-        email: sampleEmail,
-        fullName: sampleName,
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${sampleEmail}`,
-      });
-
-      const { user, accessToken, refreshToken } = data.data;
-      setAuth(user, accessToken, refreshToken);
-      navigate('/customer/menu');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Google sign-in encountered an issue. Please try again.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-4">
       <div className="w-full max-w-md glass-card p-6 sm:p-8 bg-slate-900/90 border-slate-800 rounded-3xl shadow-2xl relative overflow-hidden">
@@ -226,7 +243,7 @@ export const CustomerLogin: React.FC = () => {
           </Link>
           <h2 className="text-xl font-bold text-slate-100">Customer Sign In</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Choose your preferred way to access your cafeteria account
+            Sign in with Google, mobile OTP, or verified email
           </p>
         </div>
 
@@ -236,32 +253,27 @@ export const CustomerLogin: React.FC = () => {
         <div className="mb-5">
           <button
             type="button"
-            onClick={handleGoogleLogin}
-            disabled={googleLoading}
+            onClick={() => setGoogleModalOpen(true)}
             className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 active:scale-[0.99] text-slate-800 font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all border border-slate-200"
           >
-            {googleLoading ? (
-              <RotateCw className="w-5 h-5 animate-spin text-slate-600" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-            )}
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
             <span>Continue with Google</span>
           </button>
         </div>
@@ -327,7 +339,7 @@ export const CustomerLogin: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* 1. MOBILE NUMBER SIGN IN (OTP) */}
+        {/* 1. MOBILE NUMBER SIGN IN (MEESHO / AMAZON STYLE OTP) */}
         {/* ========================================================================= */}
         {authMethod === 'MOBILE' && (
           <>
@@ -345,12 +357,13 @@ export const CustomerLogin: React.FC = () => {
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
                       placeholder="Enter 10-digit mobile number"
-                      className="glass-input pl-10 text-sm"
+                      className="glass-input pl-10 text-sm tracking-wide"
                       autoFocus
                     />
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1.5">
-                    💡 A 6-digit verification code will be sent to your mobile phone.
+                  <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>We will send an automatic 6-digit OTP to verify your mobile number.</span>
                   </p>
                 </div>
 
@@ -362,7 +375,7 @@ export const CustomerLogin: React.FC = () => {
                   {loading ? (
                     <>
                       <RotateCw className="w-4 h-4 animate-spin" />
-                      Sending Verification Code...
+                      Sending OTP to Mobile...
                     </>
                   ) : (
                     <>
@@ -427,8 +440,9 @@ export const CustomerLogin: React.FC = () => {
                           autoFocus
                         />
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1.5">
-                        💡 A 6-digit verification code will be sent to your email inbox.
+                      <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>A 6-digit verification code will be sent to your email inbox.</span>
                       </p>
                     </div>
 
@@ -607,6 +621,120 @@ export const CustomerLogin: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* GOOGLE ACCOUNT SELECTOR MODAL (Official Google Dialog Experience) */}
+      {/* ========================================================================= */}
+      {googleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-sm bg-[#1E293B] border border-slate-700 rounded-3xl p-6 shadow-2xl relative text-white animate-scaleUp">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setGoogleModalOpen(false);
+                setShowCustomGoogleInput(false);
+              }}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Google Header */}
+            <div className="flex items-center gap-2.5 mb-4">
+              <svg className="w-6 h-6" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <div>
+                <h3 className="text-sm font-bold">Sign in with Google</h3>
+                <p className="text-[11px] text-slate-400">Choose an account to continue to RestaurantFlow</p>
+              </div>
+            </div>
+
+            {/* List of Detected Google Accounts */}
+            <div className="space-y-2 mb-4">
+              {googleAccounts.map((acc, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSelectGoogleAccount(acc.email)}
+                  className="w-full p-3 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-brand-500/50 flex items-center gap-3 transition group text-left"
+                >
+                  <img src={acc.avatar} alt={acc.name} className="w-9 h-9 rounded-full bg-slate-700 object-cover" />
+                  <div className="overflow-hidden">
+                    <div className="text-xs font-semibold text-white group-hover:text-brand-400 transition">{acc.name}</div>
+                    <div className="text-[11px] text-slate-400 truncate">{acc.email}</div>
+                  </div>
+                </button>
+              ))}
+
+              {/* Use Another Account Button */}
+              {!showCustomGoogleInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomGoogleInput(true)}
+                  className="w-full p-3 rounded-2xl bg-slate-900/60 hover:bg-slate-800 border border-dashed border-slate-700 flex items-center gap-3 transition text-left"
+                >
+                  <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-slate-300">Use another Google account</div>
+                    <div className="text-[10px] text-slate-500">Sign in with any Gmail / Workspace account</div>
+                  </div>
+                </button>
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (customGoogleEmail.trim()) {
+                      handleSelectGoogleAccount(customGoogleEmail.trim());
+                    }
+                  }}
+                  className="p-3 rounded-2xl bg-slate-900 border border-slate-700 space-y-2.5"
+                >
+                  <label className="block text-[11px] font-semibold text-slate-300">Enter Google Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={customGoogleEmail}
+                    onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                    placeholder="yourname@gmail.com"
+                    className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-xl text-white outline-none focus:border-brand-500"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-brand-500 text-white rounded-xl text-xs font-bold hover:bg-brand-400 transition flex items-center justify-center gap-1.5"
+                  >
+                    <span>Send Verification Code</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <p className="text-[10px] text-slate-400 text-center">
+              Selecting your Google account will automatically dispatch a secure 6-digit verification code to that email address.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

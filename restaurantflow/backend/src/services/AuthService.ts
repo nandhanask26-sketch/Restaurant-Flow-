@@ -87,11 +87,12 @@ export class AuthService {
       isNewUser = true;
       const defaultName = data.fullName?.trim() || email.split('@')[0];
       const randomPasswordHash = await bcrypt.hash(Math.random().toString(36), 10);
+      const uniquePhone = `+91${Date.now().toString().slice(-8)}${Math.floor(10 + Math.random() * 90)}`;
 
       user = await this.userRepo.create({
         fullName: defaultName,
         email,
-        phone: '+910000000000',
+        phone: uniquePhone,
         passwordHash: randomPasswordHash,
         role: 'CUSTOMER',
       });
@@ -430,7 +431,7 @@ export class AuthService {
       isNewUser = true;
       const defaultName = fullName?.trim() || (isEmail ? targetKey.split('@')[0] : `Customer ${targetKey.slice(-4)}`);
       const email = isEmail ? targetKey : `user_${targetKey}@restaurantflow.local`;
-      const phone = !isEmail ? targetKey : `+910000000000`;
+      const phone = !isEmail ? targetKey : `+91${Date.now().toString().slice(-8)}${Math.floor(10 + Math.random() * 90)}`;
       const randomPasswordHash = await bcrypt.hash(Math.random().toString(36), 10);
 
       user = await this.userRepo.create({
