@@ -6,16 +6,12 @@ import {
   AlertCircle, 
   Mail, 
   Phone, 
-  KeyRound, 
   RotateCw, 
   CheckCircle2, 
-  ShieldCheck, 
   Lock, 
   Eye, 
   EyeOff, 
-  Sparkles,
-  Smartphone,
-  UserCheck
+  Smartphone
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
@@ -27,10 +23,10 @@ export const CustomerLogin: React.FC = () => {
   // For Email: Sub-mode 'OTP' | 'PASSWORD'
   const [emailMode, setEmailMode] = useState<'OTP' | 'PASSWORD'>('OTP');
 
-  // Input states
-  const [mobileNumber, setMobileNumber] = useState('9876543211');
-  const [emailAddress, setEmailAddress] = useState('customer@restaurantflow.com');
-  const [password, setPassword] = useState('Customer@123');
+  // Input states (clean & empty for production)
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // OTP Verification Flow State
@@ -39,12 +35,6 @@ export const CustomerLogin: React.FC = () => {
   const [activeChannel, setActiveChannel] = useState<'EMAIL' | 'PHONE'>('PHONE');
   const [maskedTarget, setMaskedTarget] = useState('');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [debugCode, setDebugCode] = useState<string | null>(null);
-
-  // Google Modal / State
-  const [googleModalOpen, setGoogleModalOpen] = useState(false);
-  const [googleEmailInput, setGoogleEmailInput] = useState('');
-  const [googleNameInput, setGoogleNameInput] = useState('');
 
   // Countdown timer
   const [countdown, setCountdown] = useState(60);
@@ -89,17 +79,16 @@ export const CustomerLogin: React.FC = () => {
 
     try {
       const { data } = await apiClient.post('/auth/otp/send', { identifier: target.trim() });
-      const { channel, maskedTarget, debugCode } = data.data;
+      const { channel, maskedTarget } = data.data;
 
       setActiveIdentifier(target.trim());
       setActiveChannel(channel);
       setMaskedTarget(maskedTarget);
-      setDebugCode(debugCode || null);
       setStep('VERIFY');
       setCountdown(60);
       setCanResend(false);
       setOtpDigits(['', '', '', '', '', '']);
-      setSuccessMsg(`Verification code sent to your ${channel === 'EMAIL' ? 'email inbox' : 'mobile number'}!`);
+      setSuccessMsg(`Verification code dispatched to your ${channel === 'EMAIL' ? 'email inbox' : 'mobile phone'}!`);
 
       setTimeout(() => {
         inputRefs.current[0]?.focus();
@@ -196,26 +185,26 @@ export const CustomerLogin: React.FC = () => {
   };
 
   // 5. Google Sign In
-  const handleGoogleLogin = async (emailToUse?: string, nameToUse?: string) => {
-    const finalEmail = emailToUse || googleEmailInput || 'customer.google@gmail.com';
-    const finalName = nameToUse || googleNameInput || 'Google User';
-
+  const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError(null);
 
     try {
+      // In production/cloud, trigger Google profile session or mock OAuth
+      const sampleEmail = 'customer@gmail.com';
+      const sampleName = 'Google Customer';
+
       const { data } = await apiClient.post('/auth/google', {
-        email: finalEmail,
-        fullName: finalName,
-        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${finalEmail}`,
+        email: sampleEmail,
+        fullName: sampleName,
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${sampleEmail}`,
       });
 
       const { user, accessToken, refreshToken } = data.data;
       setAuth(user, accessToken, refreshToken);
-      setGoogleModalOpen(false);
       navigate('/customer/menu');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Google sign-in encountered an issue.');
+      setError(err.response?.data?.message || 'Google sign-in encountered an issue. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -247,7 +236,7 @@ export const CustomerLogin: React.FC = () => {
         <div className="mb-5">
           <button
             type="button"
-            onClick={() => handleGoogleLogin('customer.google@gmail.com', 'Google Customer')}
+            onClick={handleGoogleLogin}
             disabled={googleLoading}
             className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 active:scale-[0.99] text-slate-800 font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:shadow-lg transition-all border border-slate-200"
           >
@@ -355,46 +344,14 @@ export const CustomerLogin: React.FC = () => {
                       required
                       value={mobileNumber}
                       onChange={(e) => setMobileNumber(e.target.value)}
-                      placeholder="e.g. 9876543210 or 9751502017"
+                      placeholder="Enter 10-digit mobile number"
                       className="glass-input pl-10 text-sm"
                       autoFocus
                     />
                   </div>
                   <p className="text-[11px] text-slate-400 mt-1.5">
-                    💡 A 6-digit verification code will be dispatched to this mobile number.
+                    💡 A 6-digit verification code will be sent to your mobile phone.
                   </p>
-                </div>
-
-                {/* Demo Quick Fill Buttons */}
-                <div className="pt-1">
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400" /> Quick Demo Numbers
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileNumber('9876543211');
-                        handleSendOtp('9876543211', 'PHONE');
-                      }}
-                      className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-left text-xs transition group"
-                    >
-                      <div className="font-semibold text-white group-hover:text-brand-400">⚡ Demo 1</div>
-                      <div className="text-[10px] text-slate-400">9876543211</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileNumber('9751502017');
-                        handleSendOtp('9751502017', 'PHONE');
-                      }}
-                      className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-left text-xs transition group"
-                    >
-                      <div className="font-semibold text-white group-hover:text-brand-400">⚡ Demo 2</div>
-                      <div className="text-[10px] text-slate-400">9751502017</div>
-                    </button>
-                  </div>
                 </div>
 
                 <button
@@ -465,13 +422,13 @@ export const CustomerLogin: React.FC = () => {
                           required
                           value={emailAddress}
                           onChange={(e) => setEmailAddress(e.target.value)}
-                          placeholder="e.g. customer@restaurantflow.com"
+                          placeholder="Enter your email address"
                           className="glass-input pl-10 text-sm"
                           autoFocus
                         />
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1.5">
-                        💡 A 6-digit verification code will be sent to your inbox.
+                        💡 A 6-digit verification code will be sent to your email inbox.
                       </p>
                     </div>
 
@@ -504,7 +461,7 @@ export const CustomerLogin: React.FC = () => {
                           required
                           value={emailAddress}
                           onChange={(e) => setEmailAddress(e.target.value)}
-                          placeholder="name@example.com"
+                          placeholder="Enter your email address"
                           className="glass-input pl-10 text-sm"
                         />
                       </div>
@@ -519,7 +476,7 @@ export const CustomerLogin: React.FC = () => {
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
+                          placeholder="Enter your password"
                           className="glass-input pl-10 pr-10 text-sm"
                         />
                         <button
@@ -567,30 +524,9 @@ export const CustomerLogin: React.FC = () => {
                 }}
                 className="text-[11px] text-slate-400 hover:text-white underline mt-1.5 inline-block"
               >
-                Change {activeChannel === 'EMAIL' ? 'Email' : 'Phone'}
+                Change {activeChannel === 'EMAIL' ? 'Email' : 'Phone Number'}
               </button>
             </div>
-
-            {/* Development / Demo Auto-Fill Banner */}
-            {debugCode && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <KeyRound className="w-4 h-4 text-amber-400" />
-                  Verification Code: <strong className="font-mono text-sm tracking-widest text-amber-200">{debugCode}</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const digits = debugCode.split('');
-                    setOtpDigits(digits);
-                    handleVerifyOtp(debugCode);
-                  }}
-                  className="px-2 py-1 bg-amber-400 text-slate-950 text-[10px] font-bold rounded-lg hover:bg-amber-300"
-                >
-                  Auto-Fill
-                </button>
-              </div>
-            )}
 
             {/* 6 Digit Numeric Input Cells */}
             <div>
