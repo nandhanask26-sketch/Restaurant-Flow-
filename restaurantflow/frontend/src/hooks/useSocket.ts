@@ -1,15 +1,32 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+export function getSocketUrl(): string {
+  if (import.meta.env.VITE_SOCKET_URL) {
+    return import.meta.env.VITE_SOCKET_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('restaurantflow-frontend.onrender.com')) {
+      return 'https://restaurantflow-backend.onrender.com';
+    }
+    if (hostname.includes('onrender.com')) {
+      const backendHost = hostname.replace('-frontend', '-backend');
+      return `https://${backendHost}`;
+    }
+    return window.location.origin;
+  }
+  return '';
+}
 
 export function useSocket(restaurantId?: string | null) {
   const socketRef = useRef<Socket | null>(null);
   const { user, accessToken } = useAuthStore();
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
+    const socket = io(getSocketUrl(), {
       auth: {
         token: accessToken,
       },
@@ -19,6 +36,7 @@ export function useSocket(restaurantId?: string | null) {
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      setIsConnected(true);
       // If customer, join user room
       if (user?.id) {
         socket.emit('join:user', user.id);
@@ -29,22 +47,32 @@ export function useSocket(restaurantId?: string | null) {
       }
     });
 
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, [user?.id, restaurantId, accessToken]);
+  }, [restaurantId, user?.id, accessToken]);
 
-  const on = (event: string, callback: (...args: any[]) => void) => {
-    if (socketRef.current) {
-      socketRef.current.on(event, callback);
-    }
+  const emit = useCallback((event: string, data?: any) => {
+    socketRef.current?.emit(event, data);
+  }, []);
+
+  const on = useCallback((event: string, callback: (...args: any[]) => void) => {
+    socketRef.current?.on(event, callback);
+  }, []);
+
+  const off = useCallback((event: string, callback?: (...args: any[]) => void) => {
+    socketRef.current?.off(event, callback);
+  }, []);
+
+  return {
+    socket: socketRef.current,
+    isConnected,
+    emit,
+    on,
+    off,
   };
-
-  const off = (event: string, callback?: (...args: any[]) => void) => {
-    if (socketRef.current) {
-      socketRef.current.off(event, callback);
-    }
-  };
-
-  return { socket: socketRef.current, on, off };
 }

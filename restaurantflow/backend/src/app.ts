@@ -18,24 +18,13 @@ export function createApp(): Express {
     })
   );
 
-  // CORS configuration
-  const allowedOrigins = [
-    env.FRONTEND_URL,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:3000',
-    'http://localhost:5000',
-  ];
+  // Enable reverse proxy support (Required for Render, Vercel, Cloudflare load balancers)
+  app.set('trust proxy', 1);
 
+  // CORS configuration: Allow all web clients in cloud & dev
   app.use(
     cors({
-      origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
-          callback(null, true);
-        } else {
-          callback(null, true); // Permissive in dev for convenience
-        }
-      },
+      origin: true,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],

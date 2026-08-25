@@ -1,9 +1,26 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Smart API Base URL resolver: adapts to Render Cloud, Custom Domain, or Local Dev
+export function getApiBaseUrl(): string {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Render static site targeting Render backend
+    if (hostname.includes('restaurantflow-frontend.onrender.com')) {
+      return 'https://restaurantflow-backend.onrender.com/api';
+    }
+    if (hostname.includes('onrender.com')) {
+      const backendHost = hostname.replace('-frontend', '-backend');
+      return `https://${backendHost}/api`;
+    }
+  }
+  return '/api';
+}
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -42,15 +59,14 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh')) {
-        return Promise.reject(error);
-      }
-
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => apiClient(originalRequest))
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
           .catch((err) => Promise.reject(err));
       }
 
@@ -58,32 +74,38 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('rf_refresh_token');
+
       if (!refreshToken) {
+        isRefreshing = false;
         localStorage.removeItem('rf_access_token');
         localStorage.removeItem('rf_refresh_token');
         localStorage.removeItem('rf_user');
-        window.dispatchEvent(new Event('auth:logout'));
         return Promise.reject(error);
       }
 
       try {
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = data.data;
+        const { data } = await axios.post(`${getApiBaseUrl()}/auth/refresh`, {
+          refreshToken,
+        });
 
-        localStorage.setItem('rf_access_token', accessToken);
-        localStorage.setItem('rf_refresh_token', newRefreshToken);
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = data.data;
 
-        apiClient.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-        processQueue(null, accessToken);
+        localStorage.setItem('rf_access_token', newAccessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('rf_refresh_token', newRefreshToken);
+        }
 
+        apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+        processQueue(null, newAccessToken);
         return apiClient(originalRequest);
-      } catch (refreshErr) {
-        processQueue(refreshErr, null);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
         localStorage.removeItem('rf_access_token');
         localStorage.removeItem('rf_refresh_token');
         localStorage.removeItem('rf_user');
-        window.dispatchEvent(new Event('auth:logout'));
-        return Promise.reject(refreshErr);
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
