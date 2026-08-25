@@ -69,6 +69,50 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
+  async loginWithGoogle(data: {
+    email: string;
+    fullName?: string;
+    avatarUrl?: string;
+    googleId?: string;
+  }): Promise<{ user: User; accessToken: string; refreshToken: string; isNewUser: boolean }> {
+    if (!data.email) {
+      throw new BadRequestError('A valid Google email is required.');
+    }
+
+    const email = data.email.toLowerCase().trim();
+    let user = await this.userRepo.findByEmail(email);
+    let isNewUser = false;
+
+    if (!user) {
+      isNewUser = true;
+      const defaultName = data.fullName?.trim() || email.split('@')[0];
+      const randomPasswordHash = await bcrypt.hash(Math.random().toString(36), 10);
+
+      user = await this.userRepo.create({
+        fullName: defaultName,
+        email,
+        phone: '+910000000000',
+        passwordHash: randomPasswordHash,
+        role: 'CUSTOMER',
+      });
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await this.userRepo.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
+
+    const { passwordHash: _, ...cleanUser } = user as any;
+    return { user: cleanUser as User, accessToken, refreshToken, isNewUser };
+  }
+
   async registerManager(data: {
     managerName: string;
     email: string;

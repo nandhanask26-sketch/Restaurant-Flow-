@@ -54,6 +54,21 @@ export class AuthController {
     }
   };
 
+  loginGoogle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, fullName, avatarUrl, googleId } = req.body;
+      const result = await this.authService.loginWithGoogle({
+        email,
+        fullName,
+        avatarUrl,
+        googleId,
+      });
+      sendSuccess(res, result, 'Signed in with Google successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
   sendLoginOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { identifier } = req.body;
