@@ -1,12 +1,18 @@
+/// <reference types="jest" />
 import request from 'supertest';
 import { createApp } from '../src/app';
 import { Express } from 'express';
+import { closePool } from '../src/config/database';
 
 describe('Authentication & Authorization Suite', () => {
   let app: Express;
 
   beforeAll(() => {
     app = createApp();
+  });
+
+  afterAll(async () => {
+    await closePool();
   });
 
   const testEmail = `cust_${Date.now()}@example.com`;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChefHat, Store, User, Mail, Phone, Lock, ArrowRight, AlertCircle, Eye, EyeOff, Check, X } from 'lucide-react';
+import { ChefHat, Store, User, Mail, Phone, Lock, ArrowLeft, ArrowRight, AlertCircle, Eye, EyeOff, Check, X } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
@@ -68,6 +68,16 @@ export const RegisterManager: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-xl glass-card p-8 bg-slate-900/90 border-slate-800 rounded-3xl shadow-2xl">
+        {/* Back Navigation Button */}
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold border border-slate-700/50 hover:border-slate-600 transition-all group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
         <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
@@ -227,7 +237,7 @@ export const RegisterManager: React.FC = () => {
                   required
                   value={formData.restaurantName}
                   onChange={handleChange}
-                  placeholder="Spice Garden"
+                  placeholder="Nalans Mess"
                   className="glass-input text-xs py-2"
                 />
               </div>

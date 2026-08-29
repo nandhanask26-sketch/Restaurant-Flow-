@@ -1,5 +1,7 @@
 export type UserRole = 'CUSTOMER' | 'RESTAURANT_MANAGER' | 'ADMIN';
 
+export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'EMAIL_OTP' | 'PHONE_OTP';
+
 export type OrderStatus =
   | 'CREATED'
   | 'PAYMENT_PENDING'
@@ -21,11 +23,15 @@ export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACKS' | 'ALL_DAY';
 export interface User {
   id: string;
   fullName: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   passwordHash?: string;
   role: UserRole;
   isActive: boolean;
+  googleId?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  authProvider?: AuthProvider;
   createdAt: Date;
   updatedAt: Date;
 }

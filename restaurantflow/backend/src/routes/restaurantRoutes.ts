@@ -3,7 +3,7 @@ import { RestaurantController } from '../controllers/RestaurantController';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/roleMiddleware';
 import { validate } from '../middleware/validateMiddleware';
-import { updateRestaurantStatusSchema } from '../validators';
+import { updateRestaurantStatusSchema, updateRestaurantProfileSchema } from '../validators';
 
 const router = Router();
 const restaurantController = new RestaurantController();
@@ -18,6 +18,22 @@ router.patch(
   requireRole('RESTAURANT_MANAGER', 'ADMIN'),
   validate(updateRestaurantStatusSchema),
   restaurantController.updateStatus
+);
+
+router.put(
+  '/:id',
+  authMiddleware,
+  requireRole('RESTAURANT_MANAGER', 'ADMIN'),
+  validate(updateRestaurantProfileSchema),
+  restaurantController.update
+);
+
+router.patch(
+  '/:id',
+  authMiddleware,
+  requireRole('RESTAURANT_MANAGER', 'ADMIN'),
+  validate(updateRestaurantProfileSchema),
+  restaurantController.update
 );
 
 export default router;

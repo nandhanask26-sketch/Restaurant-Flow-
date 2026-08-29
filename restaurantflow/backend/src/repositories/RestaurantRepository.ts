@@ -93,6 +93,80 @@ export class RestaurantRepository {
     return this.mapRowToRestaurant(res.rows[0]);
   }
 
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string | null;
+      address?: string;
+      phone?: string;
+      email?: string | null;
+      openingTime?: string;
+      closingTime?: string;
+      imageUrl?: string | null;
+      isOpen?: boolean;
+    }
+  ): Promise<Restaurant | null> {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (data.name !== undefined) {
+      fields.push(`name = $${idx++}`);
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      fields.push(`description = $${idx++}`);
+      values.push(data.description);
+    }
+    if (data.address !== undefined) {
+      fields.push(`address = $${idx++}`);
+      values.push(data.address);
+    }
+    if (data.phone !== undefined) {
+      fields.push(`phone = $${idx++}`);
+      values.push(data.phone);
+    }
+    if (data.email !== undefined) {
+      fields.push(`email = $${idx++}`);
+      values.push(data.email);
+    }
+    if (data.openingTime !== undefined) {
+      fields.push(`opening_time = $${idx++}`);
+      values.push(data.openingTime);
+    }
+    if (data.closingTime !== undefined) {
+      fields.push(`closing_time = $${idx++}`);
+      values.push(data.closingTime);
+    }
+    if (data.imageUrl !== undefined) {
+      fields.push(`image_url = $${idx++}`);
+      values.push(data.imageUrl);
+    }
+    if (data.isOpen !== undefined) {
+      fields.push(`is_open = $${idx++}`);
+      values.push(data.isOpen);
+    }
+
+    if (fields.length === 0) {
+      return this.findById(id);
+    }
+
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const sql = `
+      UPDATE restaurants
+      SET ${fields.join(', ')}
+      WHERE id = $${idx}
+      RETURNING id, name, description, address, phone, email, is_open, opening_time, closing_time, image_url, created_at, updated_at
+    `;
+
+    const res = await query(sql, values);
+    if (res.rows.length === 0) return null;
+    return this.mapRowToRestaurant(res.rows[0]);
+  }
+
   private mapRowToRestaurant(row: any): Restaurant {
     return {
       id: row.id,

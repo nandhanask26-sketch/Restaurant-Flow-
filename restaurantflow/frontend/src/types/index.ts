@@ -15,14 +15,20 @@ export type PaymentMethod = 'UPI' | 'CARD' | 'CASH_ON_DELIVERY' | 'NET_BANKING';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'UNPAID' | 'FAILED' | 'REFUNDED';
 export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACKS' | 'ALL_DAY';
 
+export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'EMAIL_OTP' | 'PHONE_OTP';
+
 export interface User {
   id: string;
   fullName: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   role: UserRole;
   isActive?: boolean;
   avatarUrl?: string;
+  googleId?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  authProvider?: AuthProvider;
 }
 
 export interface Restaurant {
@@ -166,3 +172,26 @@ export interface ApiResponse<T = any> {
   code?: string;
   errors?: any[];
 }
+
+export interface DayHistoryItem {
+  dateStr: string;
+  formattedDate: string;
+  dayOfWeek: string;
+  totalOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  revenue: number;
+  avgOrderValue: number;
+}
+
+export interface MonthlyHistoryItem {
+  monthKey: string;
+  monthLabel: string;
+  totalOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  revenue: number;
+  avgOrderValue: number;
+  days: DayHistoryItem[];
+}
+

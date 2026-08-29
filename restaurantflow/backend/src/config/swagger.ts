@@ -90,6 +90,131 @@ export const swaggerDocument = {
     },
   },
   paths: {
+    '/auth/email/send-otp': {
+      post: {
+        summary: 'Send 6-digit verification code to customer email',
+        tags: ['Authentication'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email'],
+                properties: {
+                  email: { type: 'string', format: 'email', example: 'customer@example.com' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Generic dispatch confirmation response' },
+          400: { description: 'Invalid email or rate limited' },
+        },
+      },
+    },
+    '/auth/email/verify-otp': {
+      post: {
+        summary: 'Verify 6-digit email OTP and authenticate/create customer',
+        tags: ['Authentication'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['email', 'otp'],
+                properties: {
+                  email: { type: 'string', format: 'email', example: 'customer@example.com' },
+                  otp: { type: 'string', example: '123456' },
+                  fullName: { type: 'string', example: 'Priya Sharma' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Authentication successful with JWT tokens' },
+          400: { description: 'Invalid or expired OTP' },
+        },
+      },
+    },
+    '/auth/phone/send-otp': {
+      post: {
+        summary: 'Send 6-digit verification code to customer mobile number',
+        tags: ['Authentication'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['phone'],
+                properties: {
+                  phone: { type: 'string', example: '+919876543210' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Generic dispatch confirmation response' },
+          400: { description: 'Invalid phone or rate limited' },
+        },
+      },
+    },
+    '/auth/phone/verify-otp': {
+      post: {
+        summary: 'Verify 6-digit phone OTP and authenticate/create customer',
+        tags: ['Authentication'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['phone', 'otp'],
+                properties: {
+                  phone: { type: 'string', example: '+919876543210' },
+                  otp: { type: 'string', example: '123456' },
+                  fullName: { type: 'string', example: 'Rajesh Kumar' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Authentication successful with JWT tokens' },
+          400: { description: 'Invalid or expired OTP' },
+        },
+      },
+    },
+    '/auth/google': {
+      post: {
+        summary: 'Authenticate with Google ID Token or Credential',
+        tags: ['Authentication'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  credential: { type: 'string', description: 'Google Identity Services JWT credential' },
+                  idToken: { type: 'string', description: 'Google OAuth ID Token' },
+                  accessToken: { type: 'string', description: 'Google OAuth Access Token' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Authentication successful with JWT tokens' },
+          401: { description: 'Invalid Google token' },
+        },
+      },
+    },
     '/auth/register/customer': {
       post: {
         summary: 'Register new customer',

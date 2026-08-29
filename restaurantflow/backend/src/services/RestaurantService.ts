@@ -46,4 +46,40 @@ export class RestaurantService {
 
     return updated;
   }
+
+  async updateRestaurant(
+    id: string,
+    data: {
+      name?: string;
+      description?: string | null;
+      address?: string;
+      phone?: string;
+      email?: string | null;
+      openingTime?: string;
+      closingTime?: string;
+      imageUrl?: string | null;
+      isOpen?: boolean;
+    }
+  ): Promise<Restaurant> {
+    const updated = await this.restaurantRepo.update(id, data);
+    if (!updated) {
+      throw new NotFoundError('Restaurant not found');
+    }
+
+    if (data.isOpen !== undefined) {
+      emitToRestaurant(id, SOCKET_EVENTS.RESTAURANT_STATUS_CHANGED, {
+        restaurantId: id,
+        isOpen: updated.isOpen,
+      });
+      emitGlobal(SOCKET_EVENTS.RESTAURANT_STATUS_CHANGED, {
+        restaurantId: id,
+        isOpen: updated.isOpen,
+      });
+    }
+
+    emitToRestaurant(id, SOCKET_EVENTS.RESTAURANT_UPDATED, updated);
+    emitGlobal(SOCKET_EVENTS.RESTAURANT_UPDATED, updated);
+
+    return updated;
+  }
 }

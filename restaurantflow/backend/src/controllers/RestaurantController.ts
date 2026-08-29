@@ -72,4 +72,32 @@ export class RestaurantController {
       next(error);
     }
   };
+
+  update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const restaurantId = req.params.id;
+
+      if (req.user?.role === 'RESTAURANT_MANAGER' && req.user.restaurantId !== restaurantId) {
+        throw new ForbiddenError('You can only update details for your assigned restaurant');
+      }
+
+      const updated = await this.restaurantService.updateRestaurant(restaurantId, req.body);
+
+      await this.auditService.record(
+        'RESTAURANT_UPDATED',
+        'RESTAURANT',
+        {
+          userId: req.user?.userId,
+          restaurantId,
+          entityId: restaurantId,
+          metadata: req.body,
+          ipAddress: req.ip,
+        }
+      );
+
+      sendSuccess(res, updated, 'Restaurant profile updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
 }

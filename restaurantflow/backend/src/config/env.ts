@@ -17,6 +17,32 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   PAYMENT_PROVIDER: z.enum(['mock', 'razorpay', 'stripe']).default('mock'),
   LOG_LEVEL: z.string().default('info'),
+
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
+  GOOGLE_CALLBACK_URL: z.string().optional().default(''),
+
+  // OTP Configuration
+  OTP_EXPIRY_SECONDS: z.string().transform((val) => parseInt(val, 10)).default('300'),
+  OTP_MAX_ATTEMPTS: z.string().transform((val) => parseInt(val, 10)).default('5'),
+  OTP_RESEND_COOLDOWN_SECONDS: z.string().transform((val) => parseInt(val, 10)).default('30'),
+
+  // SMS Gateway Configuration (Fast2SMS / Twilio / auto fallback)
+  FAST2SMS_API_KEY: z.string().optional().default(''),
+  TWILIO_ACCOUNT_SID: z.string().optional().default(''),
+  TWILIO_AUTH_TOKEN: z.string().optional().default(''),
+  TWILIO_PHONE_NUMBER: z.string().optional().default(''),
+
+  // Email Gateway Configuration (Gmail / SMTP / Ethereal fallback)
+  GMAIL_USER: z.string().optional().default(''),
+  GMAIL_APP_PASSWORD: z.string().optional().default(''),
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.string().optional().default('587'),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASS: z.string().optional().default(''),
+  SMTP_SECURE: z.string().optional().default('false'),
+  EMAIL_FROM: z.string().optional().default('login@restaurantflow.com'),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

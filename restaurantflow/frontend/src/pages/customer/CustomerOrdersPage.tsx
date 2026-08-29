@@ -8,7 +8,7 @@ import { QRModal } from '../../components/QRModal';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { useSocket } from '../../hooks/useSocket';
-import { SOCKET_EVENTS } from '../../../../backend/src/websocket/socketEvents';
+import { SOCKET_EVENTS } from '../../types/socketEvents';
 
 export const CustomerOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);

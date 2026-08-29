@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { OrderStatus } from '../src/types';
 
 describe('Order State Machine & Transition Rules', () => {

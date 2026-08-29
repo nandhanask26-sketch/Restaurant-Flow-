@@ -12,6 +12,109 @@ export class AuthController {
     this.auditService = new AuditService();
   }
 
+  // ==============================================================================
+  // 1. EMAIL OTP ENDPOINTS
+  // ==============================================================================
+
+  sendEmailOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email } = req.body;
+      const result = await this.authService.sendEmailOtp(email);
+      sendSuccess(res, result, result.message);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  verifyEmailOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { email, otp, fullName } = req.body;
+      const result = await this.authService.verifyEmailOtp(email, otp, fullName);
+
+      await this.auditService.record('CUSTOMER_EMAIL_OTP_LOGIN', 'USER', {
+        userId: result.user.id,
+        metadata: {
+          email: result.user.email,
+          isNewUser: result.isNewUser,
+        },
+        ipAddress: req.ip,
+      });
+
+      sendSuccess(
+        res,
+        result,
+        result.isNewUser ? 'Welcome to RestaurantFlow! Account created successfully.' : 'Login verified successfully'
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ==============================================================================
+  // 2. PHONE OTP ENDPOINTS
+  // ==============================================================================
+
+  sendPhoneOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { phone } = req.body;
+      const result = await this.authService.sendPhoneOtp(phone);
+      sendSuccess(res, result, result.message);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  verifyPhoneOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { phone, otp, fullName } = req.body;
+      const result = await this.authService.verifyPhoneOtp(phone, otp, fullName);
+
+      await this.auditService.record('CUSTOMER_PHONE_OTP_LOGIN', 'USER', {
+        userId: result.user.id,
+        metadata: {
+          phone: result.user.phone,
+          isNewUser: result.isNewUser,
+        },
+        ipAddress: req.ip,
+      });
+
+      sendSuccess(
+        res,
+        result,
+        result.isNewUser ? 'Welcome to RestaurantFlow! Account created successfully.' : 'Login verified successfully'
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ==============================================================================
+  // 3. GOOGLE OAUTH ENDPOINT
+  // ==============================================================================
+
+  googleAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.authService.authenticateWithGoogle(req.body);
+
+      await this.auditService.record('CUSTOMER_GOOGLE_LOGIN', 'USER', {
+        userId: result.user.id,
+        metadata: {
+          email: result.user.email,
+          isNewUser: result.isNewUser,
+        },
+        ipAddress: req.ip,
+      });
+
+      sendSuccess(res, result, 'Signed in with Google successfully');
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // ==============================================================================
+  // 4. EXISTING AUTH METHODS
+  // ==============================================================================
+
   registerCustomer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.authService.registerCustomer(req.body);
@@ -55,18 +158,7 @@ export class AuthController {
   };
 
   loginGoogle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { email, fullName, avatarUrl, googleId } = req.body;
-      const result = await this.authService.loginWithGoogle({
-        email,
-        fullName,
-        avatarUrl,
-        googleId,
-      });
-      sendSuccess(res, result, 'Signed in with Google successfully');
-    } catch (error) {
-      next(error);
-    }
+    return this.googleAuth(req, res, next);
   };
 
   sendLoginOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -81,8 +173,9 @@ export class AuthController {
 
   verifyLoginOtp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { identifier, code, fullName } = req.body;
-      const result = await this.authService.verifyLoginOtp(identifier, code, fullName);
+      const { identifier, code, otp, fullName } = req.body;
+      const activeCode = code || otp;
+      const result = await this.authService.verifyLoginOtp(identifier, activeCode, fullName);
       sendSuccess(
         res,
         result,

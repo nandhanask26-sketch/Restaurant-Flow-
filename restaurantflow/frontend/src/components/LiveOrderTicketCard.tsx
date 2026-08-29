@@ -13,7 +13,7 @@ interface LiveOrderTicketCardProps {
 }
 
 export const LiveOrderTicketCard: React.FC<LiveOrderTicketCardProps> = ({
-  restaurantName = 'Spice Garden — Koramangala',
+  restaurantName = 'Nalans Mess',
   restaurantStatus = true,
   onToggleStatus,
   orders = [],

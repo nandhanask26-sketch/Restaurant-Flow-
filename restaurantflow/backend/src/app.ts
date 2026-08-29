@@ -31,9 +31,9 @@ export function createApp(): Express {
     })
   );
 
-  // Body parsers
-  app.use(express.json({ limit: '5mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+  // Body parsers (supports image document uploads)
+  app.use(express.json({ limit: '20mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
   // Global Rate Limiting
   app.use('/api/', apiRateLimiter);

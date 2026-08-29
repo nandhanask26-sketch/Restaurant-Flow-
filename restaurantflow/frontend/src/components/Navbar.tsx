@@ -7,10 +7,13 @@ import {
   LogOut, 
   Menu as MenuIcon,
   Store,
-  ChefHat
+  ChefHat,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
+import { useThemeStore } from '../store/themeStore';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -20,6 +23,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatus }) => {
   const { user, logout } = useAuthStore();
   const { getItemCount } = useCartStore();
+  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const cartCount = getItemCount();
 
@@ -31,7 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
   const isManager = user?.role === 'RESTAURANT_MANAGER' || user?.role === 'ADMIN';
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-800">
+    <header className="sticky top-0 z-40 w-full bg-[#0F172A]/90 dark:bg-[#0F172A]/90 light:bg-white/90 backdrop-blur-md border-b border-slate-800 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3">
           {onToggleSidebar && (
@@ -43,15 +47,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
             </button>
           )}
 
-          <Link to={isManager ? '/manager/dashboard' : '/customer/dashboard'} className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform flex-shrink-0">
-              <UtensilsCrossed className="w-5 h-5" />
+          <Link to={isManager ? '/manager/profile' : '/customer/dashboard'} className="flex items-center gap-2.5 sm:gap-3 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                <line x1="6" y1="1" x2="6" y2="4"></line>
+                <line x1="10" y1="1" x2="10" y2="4"></line>
+                <line x1="14" y1="1" x2="14" y2="4"></line>
+              </svg>
             </div>
-            <div>
-              <span className="text-lg sm:text-xl font-bold font-sans tracking-tight text-white flex items-center gap-1.5">
-                Restaurant<span className="text-brand-400">Flow</span>
-              </span>
-              <span className="hidden sm:block text-[10px] uppercase font-semibold tracking-wider text-slate-400 -mt-1">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-base sm:text-lg tracking-tight text-white dark:text-white">
+                  Restaurant<span className="text-brand-400">Flow</span>
+                </span>
+              </div>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 {isManager ? 'Manager Console' : 'Smart Ordering'}
               </span>
             </div>
@@ -79,6 +91,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
 
         {/* Right Navigation & Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Dark / Light Mode Toggle Switch */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-2 sm:p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-amber-400 transition-all flex items-center justify-center shadow-sm group"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+            ) : (
+              <Moon className="w-4 h-4 text-indigo-400 group-hover:-rotate-12 transition-transform duration-300" />
+            )}
+          </button>
+
           {!isManager && (
             <Link
               to="/customer/cart"
@@ -96,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
 
           <div className="flex items-center gap-1.5 sm:gap-2 pl-1 sm:pl-2 border-l border-slate-800">
             <Link
-              to={isManager ? '/manager/dashboard' : '/customer/profile'}
+              to={isManager ? '/manager/profile' : '/customer/profile'}
               className="flex items-center gap-2 hover:opacity-90 transition group"
             >
               <div className="hidden sm:flex flex-col text-right">

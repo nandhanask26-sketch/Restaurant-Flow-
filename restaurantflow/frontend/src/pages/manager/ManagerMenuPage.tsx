@@ -11,7 +11,8 @@ import {
   X, 
   AlertCircle,
   Sparkles,
-  Search
+  Search,
+  UploadCloud
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { Food, Category, MealType, MenuSchedule } from '../../types';
@@ -133,6 +134,28 @@ export const ManagerMenuPage: React.FC = () => {
       imageUrl: food.imageUrl || '',
     });
     setIsModalOpen(true);
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image document (PNG, JPG, JPEG, WEBP, etc.)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image document size should be less than 10MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setFoodFormData((prev) => ({ ...prev, imageUrl: dataUrl }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveFood = async (e: React.FormEvent) => {
@@ -269,30 +292,27 @@ export const ManagerMenuPage: React.FC = () => {
                         alt={food.name}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute top-2 left-2 flex items-center gap-1">
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full ${
-                            food.isVegetarian ? 'bg-emerald-500' : 'bg-rose-500'
-                          }`}
-                        />
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-sm text-slate-200 font-semibold">
-                          {food.categoryName || 'General'}
-                        </span>
-                      </div>
                     </div>
 
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-1 mb-1">
-                        <h3 className="text-sm font-bold text-slate-100">{food.name}</h3>
-                        <span className="text-sm font-extrabold text-brand-400">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              food.isVegetarian ? 'bg-emerald-500' : 'bg-rose-500'
+                            }`}
+                            title={food.isVegetarian ? 'Vegetarian' : 'Non-Vegetarian'}
+                          />
+                          <h3 className="text-sm font-bold text-slate-100">{food.name}</h3>
+                        </div>
+                        <span className="text-sm font-extrabold text-brand-400 flex-shrink-0">
                           ₹{food.price.toFixed(0)}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 line-clamp-2 mb-2">
                         {food.description || 'Authentic dish'}
                       </p>
-                      <div className="flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Prep: {food.preparationTimeMinutes}m</span>
+                      <div className="flex items-center justify-end text-[11px] text-slate-400">
                         <span className="font-semibold text-slate-300">
                           Stock: {food.inventoryQuantity ?? 0}
                         </span>
@@ -571,14 +591,65 @@ export const ManagerMenuPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Image URL</label>
-                <input
-                  type="url"
-                  value={foodFormData.imageUrl}
-                  onChange={(e) => setFoodFormData({ ...foodFormData, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="glass-input text-xs py-2"
-                />
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Food Item Image
+                </label>
+
+                {foodFormData.imageUrl ? (
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-950/80 border border-slate-800">
+                    <img
+                      src={foodFormData.imageUrl}
+                      alt="Food preview"
+                      className="w-14 h-14 rounded-xl object-cover border border-slate-700/60 shadow-sm flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-200 truncate">
+                        Selected Image Document
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Document attached for this menu dish
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <label className="cursor-pointer px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200 border border-slate-600/50 transition inline-flex items-center gap-1">
+                          <UploadCloud className="w-3 h-3 text-brand-400" />
+                          <span>Change File</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageFileChange}
+                            className="hidden"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setFoodFormData((prev) => ({ ...prev, imageUrl: '' }))}
+                          className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-[11px] font-semibold text-rose-300 border border-rose-500/30 transition inline-flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-700 hover:border-brand-500/60 rounded-2xl bg-slate-950/50 hover:bg-slate-900/60 transition cursor-pointer group text-center">
+                    <div className="w-9 h-9 rounded-xl bg-slate-800 group-hover:bg-brand-500/20 flex items-center justify-center text-slate-400 group-hover:text-brand-400 mb-2 transition">
+                      <UploadCloud className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-200 group-hover:text-white">
+                      Choose Image Document
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                      Upload PNG, JPG, JPEG, WEBP from device (Max 10MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
 
               <div>

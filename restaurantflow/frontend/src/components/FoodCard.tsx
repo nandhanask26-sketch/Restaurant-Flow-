@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Minus, Clock, Check, AlertCircle } from 'lucide-react';
+import { Plus, Minus, Check, AlertCircle } from 'lucide-react';
 import { Food } from '../types';
 import { useCartStore } from '../store/cartStore';
 
@@ -55,34 +55,6 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, isRestaurantOpen = tru
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
 
-          {/* Badges on Image */}
-          <div className="absolute top-3 left-3 flex items-center gap-2">
-            {/* Veg / Non-Veg Indicator */}
-            <div
-              className={`w-5 h-5 rounded-md flex items-center justify-center border-2 bg-slate-900/90 ${
-                (isParotta ? gravyOption === 'VEG' : food.isVegetarian) ? 'border-emerald-500' : 'border-rose-500'
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  (isParotta ? gravyOption === 'VEG' : food.isVegetarian) ? 'bg-emerald-500' : 'bg-rose-500'
-                }`}
-              />
-            </div>
-
-            {food.categoryName && (
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-slate-200 border border-slate-700">
-                {food.categoryName}
-              </span>
-            )}
-          </div>
-
-          {/* Prep Time */}
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-900/80 backdrop-blur-md text-amber-300 border border-amber-500/30">
-            <Clock className="w-3 h-3" />
-            <span>{food.preparationTimeMinutes} min</span>
-          </div>
-
           {/* Sold Out Overlay if Stock = 0 */}
           {isSoldOut && (
             <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px] flex items-center justify-center">
@@ -97,10 +69,27 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, isRestaurantOpen = tru
         {/* Content */}
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-1.5">
-            <h3 className="text-base font-bold text-slate-100 group-hover:text-brand-400 transition-colors">
-              {food.name}
-            </h3>
-            <span className="text-lg font-extrabold text-brand-400">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Veg / Non-Veg Indicator */}
+              <div
+                className={`w-4 h-4 rounded-[4px] flex items-center justify-center border-2 bg-slate-900 flex-shrink-0 ${
+                  (isParotta ? gravyOption === 'VEG' : food.isVegetarian) ? 'border-emerald-500' : 'border-rose-500'
+                }`}
+                title={(isParotta ? gravyOption === 'VEG' : food.isVegetarian) ? 'Vegetarian' : 'Non-Vegetarian'}
+              >
+                <div
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    (isParotta ? gravyOption === 'VEG' : food.isVegetarian) ? 'bg-emerald-500' : 'bg-rose-500'
+                  }`}
+                />
+              </div>
+
+              <h3 className="text-base font-bold text-slate-100 group-hover:text-brand-400 transition-colors">
+                {food.name}
+              </h3>
+            </div>
+
+            <span className="text-lg font-extrabold text-brand-400 flex-shrink-0">
               ₹{food.price.toFixed(0)}
             </span>
           </div>

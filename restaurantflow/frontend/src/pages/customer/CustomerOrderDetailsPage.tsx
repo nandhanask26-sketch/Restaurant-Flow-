@@ -18,7 +18,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { PaymentGatewayModal } from '../../components/PaymentGatewayModal';
 import { useSocket } from '../../hooks/useSocket';
-import { SOCKET_EVENTS } from '../../../../backend/src/websocket/socketEvents';
+import { SOCKET_EVENTS } from '../../types/socketEvents';
 
 export const CustomerOrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -251,7 +251,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-1.5">
               <Store className="w-3.5 h-3.5 text-brand-400" />
-              <span>Restaurant: {order.restaurantName || 'Spice Garden'}</span>
+              <span>Restaurant: {order.restaurantName || 'Nalans Mess'}</span>
             </div>
           </div>
         </div>

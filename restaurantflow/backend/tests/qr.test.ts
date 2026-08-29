@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { generateVerificationCode } from '../src/utils/tokenGenerator';
 
 describe('QR Code Verification & Single-Use Rules', () => {

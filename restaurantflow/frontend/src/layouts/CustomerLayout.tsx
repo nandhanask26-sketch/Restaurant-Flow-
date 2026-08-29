@@ -5,7 +5,7 @@ import { Sidebar } from '../components/Sidebar';
 import { MobileBottomNav } from '../components/MobileBottomNav';
 import { useSocket } from '../hooks/useSocket';
 import { apiClient } from '../api/client';
-import { SOCKET_EVENTS } from '../../../backend/src/websocket/socketEvents';
+import { SOCKET_EVENTS } from '../types/socketEvents';
 
 export const CustomerLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,7 +44,7 @@ export const CustomerLayout: React.FC = () => {
   }, [on, off]);
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] flex flex-col pb-20 lg:pb-0">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col pb-20 lg:pb-0 transition-colors duration-200">
       <Navbar
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         restaurantStatus={restaurantStatus}

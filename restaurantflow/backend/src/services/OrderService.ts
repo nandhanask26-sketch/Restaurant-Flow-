@@ -43,7 +43,7 @@ export class OrderService {
 
   async createOrder(
     userId: string,
-    customerDetails: { name: string; email: string; phone: string },
+    customerDetails: { name: string; email?: string; phone?: string },
     data: {
       restaurantId: string;
       preferredTimeType: PreferredTimeType;
@@ -159,7 +159,11 @@ export class OrderService {
         userId,
         totalAmount,
         data.paymentMethod,
-        customerDetails
+        {
+          name: customerDetails.name,
+          email: customerDetails.email || '',
+          phone: customerDetails.phone || '',
+        }
       );
       order.payment = payment;
 

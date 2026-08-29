@@ -19,7 +19,7 @@ import { QRScannerModal } from '../../components/QRScannerModal';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { useSocket } from '../../hooks/useSocket';
-import { SOCKET_EVENTS } from '../../../../backend/src/websocket/socketEvents';
+import { SOCKET_EVENTS } from '../../types/socketEvents';
 
 export const ManagerSmartQueuePage: React.FC = () => {
   const { restaurantId } = useOutletContext<{ restaurantId: string }>();

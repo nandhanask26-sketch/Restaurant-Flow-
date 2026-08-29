@@ -1,5 +1,27 @@
 import { query } from '../config/database';
 
+export interface DayHistoryItem {
+  dateStr: string;
+  formattedDate: string;
+  dayOfWeek: string;
+  totalOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  revenue: number;
+  avgOrderValue: number;
+}
+
+export interface MonthlyHistoryItem {
+  monthKey: string;
+  monthLabel: string;
+  totalOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  revenue: number;
+  avgOrderValue: number;
+  days: DayHistoryItem[];
+}
+
 export class AnalyticsRepository {
   async getDashboardKPIs(restaurantId: string): Promise<{
     todayOrders: number;
@@ -55,16 +77,8 @@ export class AnalyticsRepository {
     };
   }
 
-  async getMonthlyOrderHistory(restaurantId: string): Promise<{
-    monthKey: string;
-    monthLabel: string;
-    totalOrders: number;
-    deliveredOrders: number;
-    cancelledOrders: number;
-    revenue: number;
-    avgOrderValue: number;
-  }[]> {
-    const sql = `
+  async getMonthlyOrderHistory(restaurantId: string): Promise<MonthlyHistoryItem[]> {
+    const monthlySql = `
       SELECT 
         TO_CHAR(DATE_TRUNC('month', o.created_at), 'YYYY-MM') as month_key,
         TO_CHAR(DATE_TRUNC('month', o.created_at), 'FMMonth YYYY') as month_label,
@@ -79,8 +93,48 @@ export class AnalyticsRepository {
       GROUP BY DATE_TRUNC('month', o.created_at)
       ORDER BY DATE_TRUNC('month', o.created_at) DESC;
     `;
-    const res = await query(sql, [restaurantId]);
-    return res.rows.map((r) => ({
+
+    const dailySql = `
+      SELECT 
+        TO_CHAR(DATE_TRUNC('month', o.created_at), 'YYYY-MM') as month_key,
+        TO_CHAR(DATE(o.created_at), 'YYYY-MM-DD') as date_str,
+        TO_CHAR(DATE(o.created_at), 'DD Mon YYYY') as formatted_date,
+        TRIM(TO_CHAR(DATE(o.created_at), 'FMDay')) as day_of_week,
+        COUNT(o.id) as total_orders,
+        COUNT(CASE WHEN o.status = 'DELIVERED' THEN 1 END) as delivered_orders,
+        COUNT(CASE WHEN o.status = 'CANCELLED' THEN 1 END) as cancelled_orders,
+        COALESCE(SUM(CASE WHEN p.status = 'PAID' THEN p.amount ELSE 0 END), 0) as revenue,
+        COALESCE(AVG(CASE WHEN p.status = 'PAID' THEN p.amount END), 0) as avg_order_value
+      FROM orders o
+      LEFT JOIN payments p ON o.id = p.order_id
+      WHERE o.restaurant_id = $1
+      GROUP BY DATE_TRUNC('month', o.created_at), DATE(o.created_at)
+      ORDER BY DATE(o.created_at) DESC;
+    `;
+
+    const [monthlyRes, dailyRes] = await Promise.all([
+      query(monthlySql, [restaurantId]),
+      query(dailySql, [restaurantId]),
+    ]);
+
+    const dailyByMonth = new Map<string, DayHistoryItem[]>();
+    for (const r of dailyRes.rows) {
+      const item: DayHistoryItem = {
+        dateStr: r.date_str,
+        formattedDate: r.formatted_date,
+        dayOfWeek: r.day_of_week,
+        totalOrders: parseInt(r.total_orders || '0', 10),
+        deliveredOrders: parseInt(r.delivered_orders || '0', 10),
+        cancelledOrders: parseInt(r.cancelled_orders || '0', 10),
+        revenue: parseFloat(r.revenue || '0'),
+        avgOrderValue: parseFloat(r.avg_order_value || '0'),
+      };
+      const existing = dailyByMonth.get(r.month_key) || [];
+      existing.push(item);
+      dailyByMonth.set(r.month_key, existing);
+    }
+
+    return monthlyRes.rows.map((r) => ({
       monthKey: r.month_key,
       monthLabel: r.month_label,
       totalOrders: parseInt(r.total_orders || '0', 10),
@@ -88,6 +142,7 @@ export class AnalyticsRepository {
       cancelledOrders: parseInt(r.cancelled_orders || '0', 10),
       revenue: parseFloat(r.revenue || '0'),
       avgOrderValue: parseFloat(r.avg_order_value || '0'),
+      days: dailyByMonth.get(r.month_key) || [],
     }));
   }
 

@@ -6,6 +6,7 @@ import {
   Mail, 
   Phone, 
   Lock, 
+  ArrowLeft,
   ArrowRight, 
   AlertCircle, 
   Eye, 
@@ -59,7 +60,7 @@ export const RegisterCustomer: React.FC = () => {
       const { user, accessToken, refreshToken } = data.data;
 
       setAuth(user, accessToken, refreshToken);
-      navigate('/customer/dashboard');
+      navigate('/customer/menu');
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -74,6 +75,16 @@ export const RegisterCustomer: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-4 py-8">
       <div className="w-full max-w-md glass-card p-8 bg-slate-900/90 border-slate-800 rounded-3xl shadow-2xl">
+        {/* Back Navigation Button */}
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold border border-slate-700/50 hover:border-slate-600 transition-all group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
         <div className="text-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">

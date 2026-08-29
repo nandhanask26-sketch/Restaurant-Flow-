@@ -34,8 +34,8 @@ export class OrderController {
         user.id,
         {
           name: user.fullName,
-          email: user.email,
-          phone: user.phone,
+          email: user.email || '',
+          phone: user.phone || '',
         },
         req.body
       );

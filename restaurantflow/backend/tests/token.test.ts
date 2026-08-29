@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 describe('Authoritative Daily Order Token Generator', () => {
   function formatToken(dateStr: string, seq: number): string {
     const dateCode = dateStr.replace(/-/g, '');

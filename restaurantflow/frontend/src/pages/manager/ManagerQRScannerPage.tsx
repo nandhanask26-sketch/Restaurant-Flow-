@@ -3,7 +3,6 @@ import { useOutletContext } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { 
   ScanLine, 
-  Search, 
   CheckCircle2, 
   AlertCircle, 
   ShoppingBag, 
@@ -20,7 +19,6 @@ export const ManagerQRScannerPage: React.FC = () => {
   const { restaurantId } = useOutletContext<{ restaurantId: string }>();
 
   const [verificationCode, setVerificationCode] = useState('');
-  const [tokenSearch, setTokenSearch] = useState('');
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,23 +75,6 @@ export const ManagerQRScannerPage: React.FC = () => {
     }
   };
 
-  const handleLookupToken = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tokenSearch.trim()) return;
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const { data } = await apiClient.get(`/orders/token/${tokenSearch.trim()}`);
-      setScannedOrder(data.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Order with this token not found.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeliverOrder = async () => {
     if (!scannedOrder) return;
     setLoading(true);
@@ -118,7 +99,7 @@ export const ManagerQRScannerPage: React.FC = () => {
           QR Verification & Order Pickup Dispatch
         </h1>
         <p className="text-xs text-slate-400 mt-0.5">
-          Scan customer's pickup QR code with device camera or enter verification code / daily token
+          Scan customer's pickup QR code with device camera or enter verification code
         </p>
       </div>
 
@@ -174,29 +155,6 @@ export const ManagerQRScannerPage: React.FC = () => {
                 className="btn-primary text-xs px-4 flex-shrink-0"
               >
                 Verify QR
-              </button>
-            </form>
-          </div>
-
-          {/* Token Lookup */}
-          <div className="glass-card p-5 bg-slate-900 border-slate-800 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Or Lookup by Daily Order Token:
-            </h3>
-            <form onSubmit={handleLookupToken} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="e.g. RF-20260821-001"
-                value={tokenSearch}
-                onChange={(e) => setTokenSearch(e.target.value)}
-                className="glass-input text-xs py-2 font-mono"
-              />
-              <button
-                type="submit"
-                disabled={loading || !tokenSearch.trim()}
-                className="btn-secondary text-xs px-4 flex-shrink-0"
-              >
-                Lookup
               </button>
             </form>
           </div>

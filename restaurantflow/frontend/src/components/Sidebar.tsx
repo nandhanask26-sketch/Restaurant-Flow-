@@ -20,21 +20,28 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
+interface NavItem {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  highlight?: boolean;
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuthStore();
   const isManager = user?.role === 'RESTAURANT_MANAGER';
 
-  const managerNav = [
-    { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/manager/smart-queue', icon: Clock, label: 'Smart Order Queue', highlight: true },
+  const managerNav: NavItem[] = [
+    { to: '/manager/profile', icon: Store, label: 'Restaurant Profile' },
+    { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan & Verify QR' },
+    { to: '/manager/smart-queue', icon: Clock, label: 'Smart Order Queue' },
     { to: '/manager/orders', icon: ListOrdered, label: 'All Orders' },
-    { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan & Verify QR', highlight: true },
     { to: '/manager/menu', icon: Utensils, label: 'Menu & Schedules' },
-    { to: '/manager/inventory', icon: Boxes, label: 'Live Inventory' },
-    { to: '/manager/analytics', icon: BarChart3, label: 'Analytics & Revenue' },
+    { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/manager/analytics', icon: BarChart3, label: 'Live Analytics & Revenue Performance' },
   ];
 
-  const customerNav = [
+  const customerNav: NavItem[] = [
     { to: '/customer/dashboard', icon: Store, label: 'Home' },
     { to: '/customer/menu', icon: Utensils, label: 'Today’s Menu', highlight: true },
     { to: '/customer/cart', icon: ShoppingBag, label: 'My Cart' },

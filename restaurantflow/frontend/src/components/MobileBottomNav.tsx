@@ -27,11 +27,12 @@ export const MobileBottomNav: React.FC = () => {
   const isManager = user?.role === 'RESTAURANT_MANAGER' || user?.role === 'ADMIN';
 
   const managerLinks: NavLinkItem[] = [
-    { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/manager/profile', icon: Store, label: 'Profile' },
+    { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan QR' },
     { to: '/manager/smart-queue', icon: Clock, label: 'Queue' },
     { to: '/manager/orders', icon: ListOrdered, label: 'Orders' },
-    { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan QR' },
-    { to: '/manager/inventory', icon: Boxes, label: 'Inventory' },
+    { to: '/manager/menu', icon: Utensils, label: 'Menu' },
+    { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   ];
 
   const customerLinks: NavLinkItem[] = [

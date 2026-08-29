@@ -43,6 +43,49 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const sendEmailOtpSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+});
+
+export const verifyEmailOtpSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  otp: z.string().min(6, 'Verification code must be 6 digits').max(6, 'Verification code must be 6 digits'),
+  fullName: z.string().min(2).max(120).optional(),
+});
+
+export const sendPhoneOtpSchema = z.object({
+  phone: z.string().min(7, 'Please enter a valid mobile number').max(20, 'Phone number is too long'),
+});
+
+export const verifyPhoneOtpSchema = z.object({
+  phone: z.string().min(7, 'Please enter a valid mobile number').max(20),
+  otp: z.string().min(6, 'Verification code must be 6 digits').max(6, 'Verification code must be 6 digits'),
+  fullName: z.string().min(2).max(120).optional(),
+});
+
+export const googleAuthSchema = z.object({
+  credential: z.string().optional(),
+  idToken: z.string().optional(),
+  accessToken: z.string().optional(),
+  email: z.string().email().optional(),
+  fullName: z.string().optional(),
+  googleId: z.string().optional(),
+});
+
+export const sendLoginOtpSchema = z.object({
+  identifier: z.string().min(3, 'Please enter a valid email or phone number'),
+});
+
+export const verifyLoginOtpSchema = z.object({
+  identifier: z.string().min(3, 'Please enter a valid email or phone number'),
+  code: z.string().min(6, 'Verification code must be 6 digits').max(6, 'Verification code must be 6 digits').optional(),
+  otp: z.string().min(6, 'Verification code must be 6 digits').max(6, 'Verification code must be 6 digits').optional(),
+  fullName: z.string().optional(),
+}).refine(data => data.code || data.otp, {
+  message: 'Verification code is required',
+  path: ['code'],
+});
+
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
@@ -51,12 +94,24 @@ export const updateRestaurantStatusSchema = z.object({
   isOpen: z.boolean(),
 });
 
+export const updateRestaurantProfileSchema = z.object({
+  name: z.string().min(2, 'Restaurant name must be at least 2 characters').max(150).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  address: z.string().min(5, 'Address must be at least 5 characters').optional(),
+  phone: z.string().min(7, 'Valid phone number is required').max(30).optional(),
+  email: z.string().email('Invalid email address').optional().nullable(),
+  openingTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)').optional(),
+  closingTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)').optional(),
+  imageUrl: z.string().optional().nullable(),
+  isOpen: z.boolean().optional(),
+});
+
 export const createFoodSchema = z.object({
   name: z.string().min(1, 'Food name is required').max(150),
   description: z.string().optional(),
   categoryId: z.string().uuid().optional().nullable(),
   price: z.number().positive('Price must be greater than 0'),
-  imageUrl: z.string().url().optional().nullable().or(z.literal('')),
+  imageUrl: z.string().optional().nullable(),
   preparationTimeMinutes: z.number().int().min(1).default(15),
   isAvailable: z.boolean().default(true),
   isVegetarian: z.boolean().default(false),
@@ -68,7 +123,7 @@ export const updateFoodSchema = z.object({
   description: z.string().optional(),
   categoryId: z.string().uuid().optional().nullable(),
   price: z.number().positive().optional(),
-  imageUrl: z.string().url().optional().nullable().or(z.literal('')),
+  imageUrl: z.string().optional().nullable(),
   preparationTimeMinutes: z.number().int().min(1).optional(),
   isAvailable: z.boolean().optional(),
   isVegetarian: z.boolean().optional(),

@@ -1,13 +1,7 @@
-import { InventoryRepository } from '../src/repositories/InventoryRepository';
-import { getClient } from '../src/config/database';
+/// <reference types="jest" />
 import { OutOfStockError } from '../src/utils/errors';
 
 describe('Inventory Concurrency & Race Condition Suite', () => {
-  let inventoryRepo: InventoryRepository;
-
-  beforeAll(() => {
-    inventoryRepo = new InventoryRepository();
-  });
 
   it('verifies that FOR UPDATE locking strictly prevents race conditions and negative inventory', async () => {
     // Simulate initial inventory state of stock = 1

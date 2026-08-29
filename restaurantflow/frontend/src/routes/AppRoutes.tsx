@@ -27,6 +27,7 @@ import { ManagerMenuPage } from '../pages/manager/ManagerMenuPage';
 import { ManagerInventoryPage } from '../pages/manager/ManagerInventoryPage';
 import { ManagerQRScannerPage } from '../pages/manager/ManagerQRScannerPage';
 import { ManagerAnalyticsPage } from '../pages/manager/ManagerAnalyticsPage';
+import { ManagerRestaurantProfilePage } from '../pages/manager/ManagerRestaurantProfilePage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -54,13 +55,13 @@ export const AppRoutes: React.FC = () => {
       {/* Manager Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={['RESTAURANT_MANAGER', 'ADMIN']} />}>
         <Route path="/manager" element={<ManagerLayout />}>
-          <Route index element={<Navigate to="/manager/dashboard" replace />} />
-          <Route path="dashboard" element={<ManagerDashboard />} />
+          <Route index element={<Navigate to="/manager/profile" replace />} />
+          <Route path="profile" element={<ManagerRestaurantProfilePage />} />
+          <Route path="qr-scanner" element={<ManagerQRScannerPage />} />
           <Route path="smart-queue" element={<ManagerSmartQueuePage />} />
           <Route path="orders" element={<ManagerOrdersPage />} />
           <Route path="menu" element={<ManagerMenuPage />} />
-          <Route path="inventory" element={<ManagerInventoryPage />} />
-          <Route path="qr-scanner" element={<ManagerQRScannerPage />} />
+          <Route path="dashboard" element={<ManagerDashboard />} />
           <Route path="analytics" element={<ManagerAnalyticsPage />} />
         </Route>
       </Route>

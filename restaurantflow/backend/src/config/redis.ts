@@ -11,6 +11,11 @@ class ResilientCacheService {
   }
 
   private initRedis() {
+    if (env.NODE_ENV === 'test') {
+      this.isRedisAvailable = false;
+      return;
+    }
+
     try {
       this.redisClient = new Redis(env.REDIS_URL, {
         lazyConnect: true,
