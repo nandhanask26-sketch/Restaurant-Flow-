@@ -48,8 +48,9 @@ export async function runSeed(): Promise<void> {
       CASCADE;
     `);
 
-    // 1. Password Hash for Demo Users (Password: Password123!)
+    // 1. Password Hash for Demo Users (Supports Password123! and Manager@123)
     const passwordHash = await bcrypt.hash('Password123!', 10);
+    const managerAltHash = await bcrypt.hash('Manager@123', 10);
 
     // 2. Create Users
     console.log('👤 Creating demo users...');
@@ -60,6 +61,14 @@ export async function runSeed(): Promise<void> {
       ['Rajesh Kumar (Manager)', 'manager@example.com', '+91 9876543210', passwordHash, 'RESTAURANT_MANAGER']
     );
     const managerUser = managerRows[0];
+
+    const { rows: manager2Rows } = await client.query(
+      `INSERT INTO users (full_name, email, phone, password_hash, role)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (email) DO NOTHING
+       RETURNING id, email, role;`,
+      ['Restaurant Manager', 'manager@restaurantflow.com', '+91 9876543212', managerAltHash, 'RESTAURANT_MANAGER']
+    );
 
     const { rows: customerRows } = await client.query(
       `INSERT INTO users (full_name, email, phone, password_hash, role)
@@ -104,6 +113,15 @@ export async function runSeed(): Promise<void> {
        VALUES ($1, $2, TRUE);`,
       [restaurant.id, managerUser.id]
     );
+
+    if (manager2Rows && manager2Rows[0]) {
+      await client.query(
+        `INSERT INTO restaurant_managers (restaurant_id, user_id, is_primary)
+         VALUES ($1, $2, FALSE)
+         ON CONFLICT DO NOTHING;`,
+        [restaurant.id, manager2Rows[0].id]
+      );
+    }
 
     // Create Restaurant Hours
     for (let day = 0; day <= 6; day++) {
