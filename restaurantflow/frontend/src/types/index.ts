@@ -4,8 +4,6 @@ export type OrderStatus =
   | 'CREATED'
   | 'PAYMENT_PENDING'
   | 'CONFIRMED'
-  | 'PREPARING'
-  | 'READY'
   | 'DELIVERED'
   | 'CANCELLED'
   | 'PAYMENT_FAILED';
@@ -13,7 +11,7 @@ export type OrderStatus =
 export type PreferredTimeType = 'ASAP' | 'SCHEDULED';
 export type PaymentMethod = 'UPI' | 'CARD' | 'CASH_ON_DELIVERY' | 'NET_BANKING';
 export type PaymentStatus = 'PENDING' | 'PAID' | 'UNPAID' | 'FAILED' | 'REFUNDED';
-export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACKS' | 'ALL_DAY';
+export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACKS' | 'BEVERAGES' | 'ALL_DAY';
 
 export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'EMAIL_OTP' | 'PHONE_OTP';
 
@@ -38,10 +36,13 @@ export interface Restaurant {
   address: string;
   phone: string;
   email?: string;
+  upiId?: string;
+  upiName?: string;
   isOpen: boolean;
   openingTime: string;
   closingTime: string;
   imageUrl?: string;
+  qrCodeUrl?: string;
 }
 
 export interface Category {
@@ -142,6 +143,7 @@ export interface Order {
   notes?: string;
   cancellationReason?: string;
   items?: OrderItem[];
+  paymentMethod?: PaymentMethod;
   payment?: Payment;
   qrCode?: QrCode;
   createdAt: string;

@@ -1,9 +1,8 @@
-/// <reference types="jest" />
 import request from 'supertest';
 import { createApp } from '../src/app';
 import { Express } from 'express';
 import { OtpService } from '../src/services/OtpService';
-import { closePool } from '../src/config/database';
+import { cacheService } from '../src/config/redis';
 
 describe('Customer Production Authentication Suite', () => {
   let app: Express;
@@ -12,16 +11,9 @@ describe('Customer Production Authentication Suite', () => {
     app = createApp();
   });
 
-  afterAll(async () => {
-    await closePool();
-  });
-
   const testEmail = `test_customer_${Date.now()}@example.com`;
   const testPhone = `98${Math.floor(10000000 + Math.random() * 90000000)}`;
 
-  // ==============================================================================
-  // 1. EMAIL OTP TESTS
-  // ==============================================================================
   describe('Email OTP Flow', () => {
     it('1. should send Email OTP and return generic response without leaking OTP', async () => {
       const res = await request(app)

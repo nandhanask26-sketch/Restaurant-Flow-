@@ -260,7 +260,7 @@ export const swaggerDocument = {
                   phone: { type: 'string', example: '+91 9876543210' },
                   password: { type: 'string', example: 'Password123!' },
                   confirmPassword: { type: 'string', example: 'Password123!' },
-                  restaurantName: { type: 'string', example: 'Spice Garden' },
+                  restaurantName: { type: 'string', example: "Nalan's Mess" },
                   restaurantAddress: { type: 'string', example: '124 Gourmet Boulevard' },
                   restaurantPhone: { type: 'string', example: '+91 80 4567 8900' },
                   restaurantDescription: { type: 'string', example: 'Authentic South Indian & Biriyani.' },

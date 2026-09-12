@@ -37,7 +37,7 @@ export class OrderRepository {
                 created_at, confirmed_at, preparing_at, ready_at, delivered_at, cancelled_at, updated_at;
     `;
     const initialStatus = order.status || 'CREATED';
-    const isConfirmed = initialStatus === 'CONFIRMED' || initialStatus === 'PREPARING';
+    const isConfirmed = initialStatus === 'CONFIRMED';
     const orderParams = [
       order.restaurantId,
       order.userId,
@@ -154,8 +154,6 @@ export class OrderRepository {
         const statuses = options.status.split(',').map((s) => s.trim());
         whereClause += ` AND o.status = ANY($${idx++})`;
         params.push(statuses);
-      } else if (options.status === 'PREPARING') {
-        whereClause += ` AND o.status IN ('CONFIRMED', 'PREPARING', 'READY')`;
       } else {
         whereClause += ` AND o.status = $${idx++}`;
         params.push(options.status);
@@ -233,14 +231,8 @@ export class OrderRepository {
       JOIN users u ON o.user_id = u.id
       LEFT JOIN payments p ON o.id = p.order_id
       WHERE o.restaurant_id = $1
-        AND o.status IN ('CONFIRMED', 'PREPARING', 'READY')
+        AND o.status = 'CONFIRMED'
       ORDER BY 
-        CASE o.status 
-          WHEN 'READY' THEN 1
-          WHEN 'PREPARING' THEN 2
-          WHEN 'CONFIRMED' THEN 3
-          ELSE 4
-        END ASC,
         o.requested_food_at ASC,
         o.created_at ASC
     `;
@@ -279,10 +271,6 @@ export class OrderRepository {
     const timestampField =
       newStatus === 'CONFIRMED'
         ? 'confirmed_at = CURRENT_TIMESTAMP,'
-        : newStatus === 'PREPARING'
-        ? 'preparing_at = CURRENT_TIMESTAMP,'
-        : newStatus === 'READY'
-        ? 'ready_at = CURRENT_TIMESTAMP,'
         : newStatus === 'DELIVERED'
         ? 'delivered_at = CURRENT_TIMESTAMP,'
         : newStatus === 'CANCELLED'

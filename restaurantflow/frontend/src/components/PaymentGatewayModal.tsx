@@ -4,12 +4,9 @@ import {
   CheckCircle2, 
   Lock, 
   Loader2,
-  Copy,
-  Check,
-  QrCode,
-  Sparkles,
   ShieldCheck
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Order } from '../types';
 import { apiClient } from '../api/client';
 
@@ -18,6 +15,9 @@ interface PaymentGatewayModalProps {
   onClose: () => void;
   order: Order;
   onPaymentSuccess: (updatedOrder: Order) => void;
+  upiId?: string;
+  upiName?: string;
+  qrCodeUrl?: string;
 }
 
 export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
@@ -25,16 +25,19 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
   onClose,
   order,
   onPaymentSuccess,
+  upiId = 'nandhanask26@oksbi',
+  upiName = 'SK Nandhana',
+  qrCodeUrl,
 }) => {
   if (!isOpen) return null;
 
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [copiedUpi, setCopiedUpi] = useState(false);
 
   const amount = order.totalAmount;
-  const upiId = 'spicegarden@okaxis';
-  const upiPayload = `upi://pay?pa=${upiId}&pn=Spice%20Garden&am=${amount}&cu=INR&tn=Order_${order.orderToken}`;
+  const merchantUpiId = upiId || 'nandhanask26@oksbi';
+  const merchantName = upiName || 'SK Nandhana';
+  const upiPayload = `upi://pay?pa=${encodeURIComponent(merchantUpiId)}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=Order_${order.orderToken}`;
 
   const handleCompletePayment = async () => {
     setProcessing(true);
@@ -72,8 +75,8 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
               <Lock className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-100">RestaurantFlow Direct Pay</h3>
-              <p className="text-[11px] text-slate-400">Scan & Pay Directly to Merchant</p>
+              <h3 className="text-base font-bold text-slate-100">{merchantName || "Restaurant"} Direct Pay</h3>
+              <p className="text-[11px] text-slate-400">Scan & Pay Directly with Any UPI App</p>
             </div>
           </div>
 
@@ -113,44 +116,23 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
           </div>
         ) : (
           <div className="space-y-4 animate-fade-in">
-            {/* Direct Merchant QR Code */}
+            {/* Direct Merchant QR Code Only */}
             <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col items-center text-center space-y-3">
-              <div className="p-3 bg-white rounded-2xl shadow-xl inline-block">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=${encodeURIComponent(
-                    upiPayload
-                  )}`}
-                  alt="UPI Payment QR"
-                  className="w-36 h-36 object-contain"
-                />
-              </div>
-
-              {/* UPI ID Copy Box */}
-              <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
-                <code className="text-xs font-mono font-bold text-brand-400">
-                  {upiId}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(upiId);
-                    setCopiedUpi(true);
-                    setTimeout(() => setCopiedUpi(false), 2000);
-                  }}
-                  className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 flex items-center gap-1 transition"
-                >
-                  {copiedUpi ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400 font-bold">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </button>
+              <div className="p-3 bg-white rounded-2xl shadow-xl inline-block border-2 border-brand-500/20">
+                {qrCodeUrl ? (
+                  <img
+                    src={qrCodeUrl}
+                    alt="Payment QR"
+                    className="w-40 h-40 object-contain rounded-xl"
+                  />
+                ) : (
+                  <QRCodeSVG
+                    value={upiPayload}
+                    size={160}
+                    level="M"
+                    includeMargin={false}
+                  />
+                )}
               </div>
 
               <p className="text-[11px] text-slate-400">

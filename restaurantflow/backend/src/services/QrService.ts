@@ -1,16 +1,24 @@
 import { QrRepository } from '../repositories/QrRepository';
 import { OrderRepository } from '../repositories/OrderRepository';
+import { PaymentRepository } from '../repositories/PaymentRepository';
+import { TokenRepository } from '../repositories/TokenRepository';
 import { generateVerificationCode } from '../utils/tokenGenerator';
 import { BadRequestError, NotFoundError } from '../utils/errors';
 import { QrCode, Order } from '../types';
+import { emitToRestaurant, emitToUser } from '../websocket/socketServer';
+import { SOCKET_EVENTS } from '../websocket/socketEvents';
 
 export class QrService {
   private qrRepo: QrRepository;
   private orderRepo: OrderRepository;
+  private paymentRepo: PaymentRepository;
+  private tokenRepo: TokenRepository;
 
   constructor() {
     this.qrRepo = new QrRepository();
     this.orderRepo = new OrderRepository();
+    this.paymentRepo = new PaymentRepository();
+    this.tokenRepo = new TokenRepository();
   }
 
   async generateOrderQr(orderId: string, restaurantId: string): Promise<QrCode> {
@@ -24,62 +32,101 @@ export class QrService {
 
   /**
    * Manager Scans and Verifies Customer's Order QR Code
+   * Automatically marks QR as USED, order as DELIVERED, and strictly prevents duplicate claiming!
    */
   async verifyAndRedeemQr(
-    verificationCode: string,
+    rawCode: string,
     managerRestaurantId: string,
     managerUserId: string
   ): Promise<{ order: Order; message: string }> {
-    // 1. Find QR record
-    const qr = await this.qrRepo.findByCode(verificationCode);
+    const verificationCode = rawCode.trim();
+
+    // 1. Find QR record by verification code OR by orderToken / sequence number
+    let qr = await this.qrRepo.findByCode(verificationCode);
+    let order: Order | null = null;
+
     if (!qr) {
-      throw new NotFoundError('Invalid verification QR code. Order not found.');
+      // Check if input matches order token (e.g. TK-0909-001 or RF-20260909-001)
+      order = await this.orderRepo.findByToken(verificationCode);
+      if (!order) {
+        // Try looking up via TokenRepository (supports sequence search like "001" or "1")
+        const tokenLookup = await this.tokenRepo.findByToken(verificationCode);
+        if (tokenLookup) {
+          order = await this.orderRepo.findById(tokenLookup.orderId);
+        }
+      }
+
+      if (order) {
+        qr = await this.qrRepo.findByOrderId(order.id);
+        if (!qr) {
+          qr = await this.qrRepo.create(order.id, order.restaurantId, generateVerificationCode(order.id));
+        }
+      }
     }
 
-    // 2. Validate restaurant
+    if (!qr) {
+      throw new NotFoundError('Invalid verification code or QR code. No matching order found.');
+    }
+
+    // 2. Validate restaurant ownership
     if (qr.restaurantId !== managerRestaurantId) {
-      throw new BadRequestError('This QR code belongs to a different restaurant.');
+      throw new BadRequestError('This QR code belongs to a different restaurant / cafeteria.');
     }
 
-    // 3. Check expiration
-    if (new Date(qr.expiresAt) < new Date()) {
-      throw new BadRequestError('This QR code has expired.');
+    // 3. Fetch associated Order
+    if (!order) {
+      order = await this.orderRepo.findById(qr.orderId);
     }
-
-    // 4. Check if already scanned
-    if (qr.isScanned) {
-      throw new BadRequestError(
-        `This QR code has already been verified and redeemed on ${new Date(
-          qr.scannedAt!
-        ).toLocaleTimeString()}.`
-      );
-    }
-
-    // 5. Fetch associated Order
-    const order = await this.orderRepo.findById(qr.orderId);
     if (!order) {
       throw new NotFoundError('Order associated with this QR code does not exist.');
     }
 
-    // 6. Check Order status
+    // 4. CRITICAL ANTI-DUPLICATE CHECK: Single-use enforcement!
+    if (qr.isScanned || order.status === 'DELIVERED') {
+      const scannedDate = qr.scannedAt ? new Date(qr.scannedAt) : new Date();
+      const timeStr = scannedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = scannedDate.toLocaleDateString();
+      throw new BadRequestError(
+        `⛔ QR CODE ALREADY REDEEMED / USED! Token #${order.orderToken} was already scanned and food supplied on ${dateStr} at ${timeStr}. Duplicate food claiming is strictly blocked!`
+      );
+    }
+
+    // 5. Check if cancelled
     if (order.status === 'CANCELLED') {
-      throw new BadRequestError('Cannot verify QR code: Order has been cancelled.');
-    }
-    if (order.status === 'DELIVERED') {
-      throw new BadRequestError('Order has already been marked as DELIVERED.');
+      throw new BadRequestError(`Cannot verify QR code: Order #${order.orderToken} has been cancelled.`);
     }
 
-    // 7. Check Payment Status
-    if (order.payment?.status !== 'PAID' && order.payment?.paymentMethod !== 'CASH_ON_DELIVERY') {
-      throw new BadRequestError('Order payment is still pending. Cannot verify delivery.');
+    // 6. Check Expiration
+    if (new Date(qr.expiresAt) < new Date()) {
+      throw new BadRequestError('This QR code has expired.');
     }
 
-    // 8. Mark QR as scanned
-    await this.qrRepo.markScanned(verificationCode, managerUserId);
+    // 7. Mark QR as scanned in DB
+    await this.qrRepo.markScanned(qr.verificationCode, managerUserId);
+
+    // 8. Automatically mark Order as DELIVERED in DB
+    const updated = await this.orderRepo.updateStatus(order.id, 'DELIVERED');
+    const deliveredOrder = updated || order;
+    deliveredOrder.status = 'DELIVERED';
+    deliveredOrder.deliveredAt = new Date();
+
+    // 9. For Cash on Delivery orders, keep status UNPAID so manager is alerted to collect cash at counter
+    const isCod = deliveredOrder.payment?.paymentMethod === 'CASH_ON_DELIVERY' || deliveredOrder.payment?.status === 'UNPAID';
+    if (isCod && deliveredOrder.payment) {
+      deliveredOrder.payment.status = 'UNPAID';
+    }
+
+    // 10. Broadcast Real-time Socket.IO Events
+    emitToRestaurant(managerRestaurantId, SOCKET_EVENTS.ORDER_STATUS_UPDATED, deliveredOrder);
+    emitToUser(deliveredOrder.userId, SOCKET_EVENTS.ORDER_STATUS_UPDATED, deliveredOrder);
+    emitToRestaurant(managerRestaurantId, SOCKET_EVENTS.ORDER_DELIVERED, deliveredOrder);
+    emitToUser(deliveredOrder.userId, SOCKET_EVENTS.ORDER_DELIVERED, deliveredOrder);
 
     return {
-      order,
-      message: `QR verification successful for Order ${order.orderToken}. Ready for delivery.`,
+      order: deliveredOrder,
+      message: isCod
+        ? `⚠️ Order #${deliveredOrder.orderToken} verified! CASH ON DELIVERY — Collect ₹${deliveredOrder.totalAmount.toFixed(0)} cash from customer.`
+        : `✅ Order #${deliveredOrder.orderToken} verified & PAID via UPI! Supply food items to customer.`,
     };
   }
 }

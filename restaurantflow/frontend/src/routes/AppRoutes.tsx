@@ -58,7 +58,7 @@ export const AppRoutes: React.FC = () => {
           <Route index element={<Navigate to="/manager/profile" replace />} />
           <Route path="profile" element={<ManagerRestaurantProfilePage />} />
           <Route path="qr-scanner" element={<ManagerQRScannerPage />} />
-          <Route path="smart-queue" element={<ManagerSmartQueuePage />} />
+          <Route path="smart-queue" element={<Navigate to="/manager/qr-scanner" replace />} />
           <Route path="orders" element={<ManagerOrdersPage />} />
           <Route path="menu" element={<ManagerMenuPage />} />
           <Route path="dashboard" element={<ManagerDashboard />} />

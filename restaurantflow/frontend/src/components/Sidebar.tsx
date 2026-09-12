@@ -34,7 +34,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const managerNav: NavItem[] = [
     { to: '/manager/profile', icon: Store, label: 'Restaurant Profile' },
     { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan & Verify QR' },
-    { to: '/manager/smart-queue', icon: Clock, label: 'Smart Order Queue' },
     { to: '/manager/orders', icon: ListOrdered, label: 'All Orders' },
     { to: '/manager/menu', icon: Utensils, label: 'Menu & Schedules' },
     { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -62,13 +61,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-40 w-64 bg-[#0F172A] border-r border-slate-800 transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-16 bottom-0 left-0 z-30 w-64 bg-white dark:bg-[#0F172A] border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 lg:translate-x-0 shadow-sm ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-full flex flex-col justify-between p-4 overflow-y-auto">
           <div className="space-y-1.5">
-            <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               {isManager ? 'Management Hub' : 'Ordering Menu'}
             </div>
 
@@ -82,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 ${
                       isActive
-                        ? 'bg-gradient-to-r from-brand-600/20 to-brand-500/10 text-brand-400 border border-brand-500/30 font-semibold shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        ? 'bg-brand-500/15 text-brand-600 dark:text-brand-400 border border-brand-500/30 font-bold shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`
                   }
                 >
@@ -92,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <span>{link.label}</span>
                   </div>
                   {link.highlight && (
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                   )}
                 </NavLink>
               );

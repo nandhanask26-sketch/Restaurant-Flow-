@@ -312,11 +312,6 @@ export const ManagerMenuPage: React.FC = () => {
                       <p className="text-xs text-slate-400 line-clamp-2 mb-2">
                         {food.description || 'Authentic dish'}
                       </p>
-                      <div className="flex items-center justify-end text-[11px] text-slate-400">
-                        <span className="font-semibold text-slate-300">
-                          Stock: {food.inventoryQuantity ?? 0}
-                        </span>
-                      </div>
                     </div>
                   </div>
 
@@ -381,8 +376,8 @@ export const ManagerMenuPage: React.FC = () => {
           </div>
 
           {/* Meal Type Buttons */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS'] as MealType[]).map((meal) => (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS', 'BEVERAGES'] as MealType[]).map((meal) => (
               <button
                 key={meal}
                 type="button"
@@ -545,45 +540,6 @@ export const ManagerMenuPage: React.FC = () => {
                     value={foodFormData.price}
                     onChange={(e) =>
                       setFoodFormData({ ...foodFormData, price: parseFloat(e.target.value) })
-                    }
-                    className="glass-input text-xs py-2"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Preparation Time (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={foodFormData.preparationTimeMinutes}
-                    onChange={(e) =>
-                      setFoodFormData({
-                        ...foodFormData,
-                        preparationTimeMinutes: parseInt(e.target.value, 10),
-                      })
-                    }
-                    className="glass-input text-xs py-2"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Initial Stock Count
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={foodFormData.initialStock}
-                    onChange={(e) =>
-                      setFoodFormData({
-                        ...foodFormData,
-                        initialStock: parseInt(e.target.value, 10),
-                      })
                     }
                     className="glass-input text-xs py-2"
                   />

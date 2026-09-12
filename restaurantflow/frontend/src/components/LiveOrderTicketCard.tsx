@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, QrCode, ChevronLeft, ChevronRight, CheckCircle2, Flame } from 'lucide-react';
+import { Clock, QrCode, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Order } from '../types';
 
 interface LiveOrderTicketCardProps {
@@ -35,9 +35,7 @@ export const LiveOrderTicketCard: React.FC<LiveOrderTicketCardProps> = ({
   };
 
   // Format restaurant display title
-  const formattedRestaurantTitle = restaurantName.includes('—')
-    ? restaurantName
-    : `${restaurantName} — Koramangala`;
+  const formattedRestaurantTitle = restaurantName || 'Restaurant';
 
   return (
     <div className="glass-card p-6 border-slate-700/80 bg-[#0B1320] shadow-2xl relative overflow-hidden rounded-3xl transition-all">
@@ -113,11 +111,7 @@ export const LiveOrderTicketCard: React.FC<LiveOrderTicketCardProps> = ({
               </span>
               <p
                 className={`text-xs sm:text-sm font-bold tracking-wider ${
-                  activeOrder.status === 'PREPARING'
-                    ? 'text-amber-400'
-                    : activeOrder.status === 'READY'
-                    ? 'text-emerald-400'
-                    : activeOrder.status === 'DELIVERED'
+                  activeOrder.status === 'DELIVERED'
                     ? 'text-sky-400'
                     : 'text-amber-300'
                 }`}
@@ -213,31 +207,24 @@ export const LiveOrderTicketCard: React.FC<LiveOrderTicketCardProps> = ({
             {onAdvanceStatus && (
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {activeOrder.status === 'CONFIRMED' && (
-                  <button
-                    onClick={() => onAdvanceStatus(activeOrder.id, 'PREPARING')}
-                    className="btn-primary w-full sm:w-auto text-xs py-1.5 px-3 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold flex items-center justify-center gap-1"
-                  >
-                    <Flame className="w-3.5 h-3.5" />
-                    Start Preparing
-                  </button>
-                )}
-                {activeOrder.status === 'PREPARING' && (
-                  <button
-                    onClick={() => onAdvanceStatus(activeOrder.id, 'READY')}
-                    className="btn-primary w-full sm:w-auto text-xs py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Mark as Ready
-                  </button>
-                )}
-                {activeOrder.status === 'READY' && onOpenQrScanner && (
-                  <button
-                    onClick={onOpenQrScanner}
-                    className="btn-primary w-full sm:w-auto text-xs py-1.5 px-3 bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold flex items-center justify-center gap-1 shadow-glow"
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                    Scan to Deliver
-                  </button>
+                  <>
+                    <button
+                      onClick={() => onAdvanceStatus(activeOrder.id, 'DELIVERED')}
+                      className="btn-primary w-full sm:w-auto text-xs py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center justify-center gap-1"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Mark as Delivered
+                    </button>
+                    {onOpenQrScanner && (
+                      <button
+                        onClick={onOpenQrScanner}
+                        className="btn-primary w-full sm:w-auto text-xs py-1.5 px-3 bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold flex items-center justify-center gap-1 shadow-glow"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        Scan to Deliver
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}

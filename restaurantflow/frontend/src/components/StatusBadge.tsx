@@ -30,11 +30,6 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ''
       Icon = CheckCircle2;
       label = '🟢 OPEN';
       break;
-    case 'READY':
-      badgeClass = 'badge-green';
-      Icon = CheckCircle2;
-      label = 'READY FOR PICKUP';
-      break;
     case 'PAID':
       badgeClass = 'badge-green';
       Icon = CheckCircle;
@@ -51,12 +46,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className = ''
       label = 'AVAILABLE';
       break;
 
-    // Orange (In-Progress / Waiting / Preparing)
-    case 'PREPARING':
-      badgeClass = 'badge-orange';
-      Icon = Flame;
-      label = 'PREPARING';
-      break;
+    // Orange (In-Progress / Waiting)
     case 'CONFIRMED':
     case 'WAITING':
       badgeClass = 'badge-orange';

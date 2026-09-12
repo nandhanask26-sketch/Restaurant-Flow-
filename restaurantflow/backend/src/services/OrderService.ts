@@ -14,9 +14,7 @@ import { SOCKET_EVENTS } from '../websocket/socketEvents';
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   CREATED: ['PAYMENT_PENDING', 'CONFIRMED', 'CANCELLED'],
   PAYMENT_PENDING: ['CONFIRMED', 'PAYMENT_FAILED', 'CANCELLED'],
-  CONFIRMED: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY', 'CANCELLED'],
-  READY: ['DELIVERED', 'CANCELLED'],
+  CONFIRMED: ['DELIVERED', 'CANCELLED'],
   DELIVERED: [],
   CANCELLED: [],
   PAYMENT_FAILED: [],
@@ -59,9 +57,15 @@ export class OrderService {
       await client.query('BEGIN');
 
       // 1. Validate Restaurant status
-      const restaurant = await this.restaurantRepo.findById(data.restaurantId, client);
+      let restaurant = await this.restaurantRepo.findById(data.restaurantId, client);
       if (!restaurant) {
-        throw new NotFoundError('Restaurant not found');
+        const allRestaurants = await this.restaurantRepo.findAll();
+        if (allRestaurants.length > 0) {
+          restaurant = allRestaurants[0];
+          data.restaurantId = restaurant.id;
+        } else {
+          throw new NotFoundError('Restaurant not found');
+        }
       }
       if (!restaurant.isOpen) {
         throw new BadRequestError('Restaurant is currently closed. New orders cannot be placed at this time.');
@@ -167,11 +171,12 @@ export class OrderService {
       );
       order.payment = payment;
 
-      // 7. If Paid, attach QR code
-      if (payment.status === 'PAID') {
-        const qr = await this.qrService.getQrForOrder(order.id);
-        if (qr) order.qrCode = qr;
+      // 7. Ensure QR Code is generated & attached for the customer (Online Paid and COD)
+      let qr = await this.qrService.getQrForOrder(order.id);
+      if (!qr) {
+        qr = await this.qrService.generateOrderQr(order.id, data.restaurantId);
       }
+      order.qrCode = qr;
 
       // 8. Real-time Notification via Socket.IO
       emitToRestaurant(data.restaurantId, SOCKET_EVENTS.ORDER_CREATED, order);
@@ -245,9 +250,7 @@ export class OrderService {
       const minutesRemaining = Math.round((requestedTime - now) / 60000);
 
       let urgencyTag = 'IN QUEUE';
-      if (order.status === 'READY') {
-        urgencyTag = 'READY';
-      } else if (minutesRemaining < 0) {
+      if (minutesRemaining < 0) {
         urgencyTag = 'OVERDUE';
       } else if (minutesRemaining <= 5) {
         urgencyTag = 'READY IN 5 MIN';

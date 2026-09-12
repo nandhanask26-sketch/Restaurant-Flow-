@@ -60,7 +60,7 @@ export const RegisterCustomer: React.FC = () => {
       const { user, accessToken, refreshToken } = data.data;
 
       setAuth(user, accessToken, refreshToken);
-      navigate('/customer/menu');
+      navigate('/customer/dashboard');
     } catch (err: any) {
       setError(
         err.response?.data?.message ||

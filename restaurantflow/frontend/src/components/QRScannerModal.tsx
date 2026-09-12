@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { X, Scan, CheckCircle2, AlertCircle, ShoppingBag, ShieldCheck, Search } from 'lucide-react';
+import { X, Scan, CheckCircle2, AlertCircle, ShieldCheck, Search } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { Order } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -68,6 +68,10 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
       });
 
       setScannedOrder(data.data.order);
+      setDeliverySuccess(true);
+      if (onOrderDelivered) {
+        onOrderDelivered(data.data.order);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to verify QR code. Please check code.');
     } finally {
@@ -77,6 +81,10 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
 
   const handleDeliver = async () => {
     if (!scannedOrder) return;
+    if (scannedOrder.status === 'DELIVERED') {
+      onClose();
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -200,17 +208,21 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
                 </span>
               </div>
 
-              {/* Items list */}
-              <div className="space-y-1.5 mb-3">
-                <span className="text-xs font-semibold text-slate-400">Items Ordered:</span>
-                {scannedOrder.items?.map((item) => (
-                  <div key={item.id} className="flex justify-between text-xs text-slate-300">
-                    <span>
-                      {item.foodName} <strong className="text-brand-400">× {item.quantity}</strong>
-                    </span>
-                    <span>₹{item.totalPrice.toFixed(0)}</span>
-                  </div>
-                ))}
+              {/* Ordered Food Items Bill */}
+              <div className="space-y-2 mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                  Ordered Food Items Bill:
+                </span>
+                <div className="divide-y divide-slate-800/80 bg-slate-900 rounded-xl p-2.5 border border-slate-800">
+                  {scannedOrder.items?.map((item) => (
+                    <div key={item.id} className="py-1.5 flex justify-between text-xs text-slate-200">
+                      <span>
+                        {item.foodName} <strong className="text-brand-400 ml-1">× {item.quantity}</strong>
+                      </span>
+                      <span className="font-mono font-bold text-slate-100">₹{item.totalPrice.toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Status & Payment Badges */}
@@ -225,21 +237,31 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
               </div>
             </div>
 
+            {/* Single-Use Redeemed Notice */}
+            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+              <span className="font-semibold">
+                Token #{scannedOrder.orderToken} verified & marked as DELIVERED! Single-use QR pass is permanently locked.
+              </span>
+            </div>
+
             {/* Action Buttons */}
             <div className="flex gap-3">
               <button
                 onClick={handleReset}
                 className="btn-secondary flex-1 text-xs py-3"
               >
-                Scan Another
+                Scan Another Order
               </button>
               <button
-                onClick={handleDeliver}
-                disabled={loading || deliverySuccess}
+                onClick={() => {
+                  handleReset();
+                  onClose();
+                }}
                 className="btn-primary flex-1 text-xs py-3 font-bold flex items-center justify-center gap-2 shadow-glow"
               >
-                <ShoppingBag className="w-4 h-4" />
-                MARK AS DELIVERED
+                <CheckCircle2 className="w-4 h-4" />
+                Done & Close
               </button>
             </div>
           </div>

@@ -15,7 +15,7 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, isRestaurantOpen = tru
   const [gravyOption, setGravyOption] = useState<'VEG' | 'NON_VEG'>('VEG');
   const { addItem } = useCartStore();
 
-  const isSoldOut = (food.inventoryQuantity !== undefined && food.inventoryQuantity <= 0) || !food.isAvailable;
+  const isSoldOut = !food.isAvailable;
   const canOrder = isRestaurantOpen && !isSoldOut;
 
   const handleAddToCart = () => {
@@ -133,13 +133,6 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, isRestaurantOpen = tru
             </div>
           )}
 
-          {/* Stock remaining pill */}
-          {food.inventoryQuantity !== undefined && food.inventoryQuantity > 0 && food.inventoryQuantity <= 10 && (
-            <div className="mb-3 text-[11px] font-semibold text-amber-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
-              Only {food.inventoryQuantity} left in stock!
-            </div>
-          )}
         </div>
       </div>
 
@@ -157,12 +150,8 @@ export const FoodCard: React.FC<FoodCardProps> = ({ food, isRestaurantOpen = tru
             </button>
             <span className="w-8 text-center text-xs font-bold text-slate-200">{quantity}</span>
             <button
-              onClick={() =>
-                setQuantity((q) =>
-                  food.inventoryQuantity ? Math.min(food.inventoryQuantity, q + 1) : q + 1
-                )
-              }
-              disabled={!canOrder || (food.inventoryQuantity !== undefined && quantity >= food.inventoryQuantity)}
+              onClick={() => setQuantity((q) => q + 1)}
+              disabled={!canOrder}
               className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition"
             >
               <Plus className="w-3.5 h-3.5" />

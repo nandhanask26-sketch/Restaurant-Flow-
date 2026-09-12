@@ -13,16 +13,11 @@ import {
   AlertCircle, 
   ShieldCheck, 
   Sparkles, 
-  Flame, 
-  QrCode, 
-  ChevronRight,
   Store,
   Compass
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
-import { Restaurant, Order } from '../../types';
-import { StatusBadge } from '../../components/StatusBadge';
-import { QRModal } from '../../components/QRModal';
+import { Restaurant } from '../../types';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { useSocket } from '../../hooks/useSocket';
 import { SOCKET_EVENTS } from '../../types/socketEvents';
@@ -34,10 +29,8 @@ export const CustomerDashboard: React.FC = () => {
   }>();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedQrOrder, setSelectedQrOrder] = useState<Order | null>(null);
 
   // Live real-time clock ticker
   useEffect(() => {
@@ -67,20 +60,6 @@ export const CustomerDashboard: React.FC = () => {
           const res = await apiClient.get(`/restaurants/${targetId}`);
           if (isMounted && res.data?.data) {
             setRestaurant(res.data.data);
-          }
-        }
-
-        // 2. Fetch active orders for this customer (if logged in)
-        const token = localStorage.getItem('rf_access_token');
-        if (token) {
-          try {
-            const ordersRes = await apiClient.get('/orders?limit=3');
-            const active = (ordersRes.data?.data || []).filter(
-              (o: Order) => !['DELIVERED', 'CANCELLED', 'PAYMENT_FAILED'].includes(o.status)
-            );
-            if (isMounted) setActiveOrders(active);
-          } catch (orderErr) {
-            if (isMounted) setActiveOrders([]);
           }
         }
       } catch (err) {
@@ -144,48 +123,7 @@ export const CustomerDashboard: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-7 animate-fade-in pb-20">
-      {/* 1. Live Active Order Notification Banner (If Customer Has Orders in Kitchen) */}
-      {activeOrders.length > 0 && (
-        <div className="p-4 rounded-3xl bg-gradient-to-r from-brand-950 via-slate-900 to-slate-900 border border-brand-500/40 shadow-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-white">
-              <Flame className="w-4 h-4 text-amber-400 animate-bounce" />
-              <span>You have {activeOrders.length} active order in preparation</span>
-            </div>
-            <Link to="/customer/orders" className="text-xs text-brand-400 hover:underline flex items-center gap-1 font-semibold">
-              View Status <ChevronRight className="w-3 h-3" />
-            </Link>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-3 pt-1">
-            {activeOrders.map((order) => (
-              <div
-                key={order.id}
-                className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-extrabold text-sm text-brand-400">{order.orderToken}</span>
-                    <StatusBadge status={order.status} size="sm" />
-                  </div>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">
-                    {order.items?.map((it) => `${it.foodName} (x${it.quantity})`).join(', ')}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedQrOrder(order)}
-                  className="p-2 rounded-xl bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 border border-brand-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
-                >
-                  <QrCode className="w-3.5 h-3.5" />
-                  QR
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 2. Restaurant Showcase Card */}
+      {/* Restaurant Showcase Card */}
       <div className="glass-card bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative">
         {/* Cover Photo Banner */}
         <div className="relative h-64 sm:h-80 w-full bg-slate-950 overflow-hidden">
@@ -245,7 +183,7 @@ export const CustomerDashboard: React.FC = () => {
             <div className="text-center sm:text-left space-y-1.5 flex-1">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                 <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-                  {restaurant?.name || 'Spice Garden'}
+                  {restaurant?.name || "Nalan's Mess"}
                 </h1>
                 <span className="badge-emerald text-[11px] font-bold flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -339,7 +277,7 @@ export const CustomerDashboard: React.FC = () => {
                   Official Email
                 </span>
                 <span className="text-xs sm:text-sm font-mono font-semibold text-slate-200 block">
-                  {restaurant?.email || 'contact@spicegarden.com'}
+                  {restaurant?.email || 'contact@nalansmess.com'}
                 </span>
               </div>
             </div>
@@ -358,15 +296,6 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* QR Modal for Active Orders */}
-      {selectedQrOrder && (
-        <QRModal
-          order={selectedQrOrder}
-          isOpen={true}
-          onClose={() => setSelectedQrOrder(null)}
-        />
-      )}
     </div>
   );
 };

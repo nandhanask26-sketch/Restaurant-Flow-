@@ -62,6 +62,25 @@ export class FoodRepository {
     return this.mapRowToFood(res.rows[0]);
   }
 
+  async findByNameAndRestaurant(name: string, restaurantId: string, client?: PoolClient): Promise<Food | null> {
+    const sql = `
+      SELECT 
+        f.id, f.restaurant_id, f.category_id, c.name as category_name,
+        f.name, f.description, f.price, f.image_url,
+        f.preparation_time_minutes, f.is_available, f.is_vegetarian,
+        COALESCE(i.quantity, 0) as inventory_quantity,
+        f.created_at, f.updated_at
+      FROM foods f
+      LEFT JOIN categories c ON f.category_id = c.id
+      LEFT JOIN inventory i ON f.id = i.food_id
+      WHERE LOWER(TRIM(f.name)) = LOWER(TRIM($1)) AND f.restaurant_id = $2
+      LIMIT 1
+    `;
+    const res = client ? await client.query(sql, [name, restaurantId]) : await query(sql, [name, restaurantId]);
+    if (res.rows.length === 0) return null;
+    return this.mapRowToFood(res.rows[0]);
+  }
+
   async create(
     food: {
       restaurantId: string;

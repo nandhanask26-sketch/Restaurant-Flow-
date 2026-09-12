@@ -99,10 +99,13 @@ export const updateRestaurantProfileSchema = z.object({
   description: z.string().max(1000).optional().nullable(),
   address: z.string().min(5, 'Address must be at least 5 characters').optional(),
   phone: z.string().min(7, 'Valid phone number is required').max(30).optional(),
-  email: z.string().email('Invalid email address').optional().nullable(),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')).nullable(),
+  upiId: z.string().max(100).optional().nullable(),
+  upiName: z.string().max(150).optional().nullable(),
   openingTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)').optional(),
   closingTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid time format (HH:MM)').optional(),
   imageUrl: z.string().optional().nullable(),
+  qrCodeUrl: z.string().optional().nullable(),
   isOpen: z.boolean().optional(),
 });
 
@@ -164,8 +167,6 @@ export const updateOrderStatusSchema = z.object({
     'CREATED',
     'PAYMENT_PENDING',
     'CONFIRMED',
-    'PREPARING',
-    'READY',
     'DELIVERED',
     'CANCELLED',
     'PAYMENT_FAILED',

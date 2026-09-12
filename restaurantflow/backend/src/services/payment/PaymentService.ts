@@ -76,8 +76,11 @@ export class PaymentService {
 
     const updated = await this.paymentRepo.updateStatus(orderId, 'PAID', transactionId, verification);
     
-    // Generate secure QR for verified order
-    await this.qrService.generateOrderQr(orderId, existing.restaurantId);
+    // Generate secure QR for verified order if not already generated
+    const existingQr = await this.qrService.getQrForOrder(orderId);
+    if (!existingQr) {
+      await this.qrService.generateOrderQr(orderId, existing.restaurantId);
+    }
 
     // Update order status to CONFIRMED if it was PAYMENT_PENDING
     await this.orderRepo.updateStatus(orderId, 'CONFIRMED');

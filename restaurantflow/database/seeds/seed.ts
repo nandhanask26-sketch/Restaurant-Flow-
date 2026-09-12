@@ -88,17 +88,17 @@ export async function runSeed(): Promise<void> {
     );
 
     // 3. Create Restaurant
-    console.log('🏪 Creating "Spice Garden" restaurant...');
+    console.log('🏪 Creating "Nalan\'s Mess" restaurant...');
     const { rows: restRows } = await client.query(
       `INSERT INTO restaurants (name, description, address, phone, email, is_open, opening_time, closing_time, image_url)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, name;`,
       [
-        'Spice Garden',
+        "Nalan's Mess",
         'Authentic South Indian Meals, Tiffin, Parotta, Dosa, Chaats and Fresh Juices crafted daily with fresh ingredients.',
         '124 Gourmet Boulevard, Koramangala 4th Block, Bengaluru, Karnataka 560034',
         '+91 80 4567 8900',
-        'contact@spicegarden.com',
+        'contact@nalansmess.com',
         true,
         '07:00',
         '23:30',
@@ -786,14 +786,14 @@ export async function runSeed(): Promise<void> {
       [o1Id, restaurant.id]
     );
 
-    // Order 2: Active PREPARING Order
+    // Order 2: Active CONFIRMED Order
     const token2 = `RF-${dateCode}-002`;
     const { rows: o2Rows } = await client.query(
       `INSERT INTO orders (
         restaurant_id, user_id, order_token, status, preferred_time_type, requested_food_at,
-        subtotal, tax, total_amount, confirmed_at, preparing_at
-      ) VALUES ($1, $2, $3, 'PREPARING', 'SCHEDULED', NOW() + INTERVAL '15 minutes', 240.00, 12.00, 252.00,
-        NOW() - INTERVAL '10 minutes', NOW() - INTERVAL '5 minutes')
+        subtotal, tax, total_amount, confirmed_at
+      ) VALUES ($1, $2, $3, 'CONFIRMED', 'SCHEDULED', NOW() + INTERVAL '15 minutes', 240.00, 12.00, 252.00,
+        NOW() - INTERVAL '10 minutes')
       RETURNING id;`,
       [restaurant.id, customerUser.id, token2]
     );
@@ -825,14 +825,14 @@ export async function runSeed(): Promise<void> {
       [o2Id, restaurant.id]
     );
 
-    // Order 3: Active READY Order
+    // Order 3: Active CONFIRMED Order
     const token3 = `RF-${dateCode}-003`;
     const { rows: o3Rows } = await client.query(
       `INSERT INTO orders (
         restaurant_id, user_id, order_token, status, preferred_time_type, requested_food_at,
-        subtotal, tax, total_amount, confirmed_at, preparing_at, ready_at
-      ) VALUES ($1, $2, $3, 'READY', 'ASAP', NOW() - INTERVAL '5 minutes', 150.00, 7.50, 157.50,
-        NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '15 minutes', NOW() - INTERVAL '2 minutes')
+        subtotal, tax, total_amount, confirmed_at
+      ) VALUES ($1, $2, $3, 'CONFIRMED', 'ASAP', NOW() - INTERVAL '5 minutes', 150.00, 7.50, 157.50,
+        NOW() - INTERVAL '20 minutes')
       RETURNING id;`,
       [restaurant.id, customerUser.id, token3]
     );
@@ -877,7 +877,7 @@ export async function runSeed(): Promise<void> {
     console.log('  👨‍💼 Restaurant Manager: manager@example.com / Password123!');
     console.log('  👤 Customer:           nandhanask26@gmail.com / Password123!');
     console.log('  👤 Demo Customer:      customer@example.com / Password123!');
-    console.log('  🏪 Restaurant:         Spice Garden');
+    console.log("  🏪 Restaurant:         Nalan's Mess");
     console.log('----------------------------------------------------');
   } catch (err) {
     await client.query('ROLLBACK');

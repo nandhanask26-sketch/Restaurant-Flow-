@@ -55,9 +55,12 @@ export class RestaurantService {
       address?: string;
       phone?: string;
       email?: string | null;
+      upiId?: string | null;
+      upiName?: string | null;
       openingTime?: string;
       closingTime?: string;
       imageUrl?: string | null;
+      qrCodeUrl?: string | null;
       isOpen?: boolean;
     }
   ): Promise<Restaurant> {

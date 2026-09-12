@@ -89,13 +89,13 @@ export const ManagerSmartQueuePage: React.FC = () => {
     }
   };
 
-  // Filter "Can Deliver Soon" orders (READY status or <= 5 mins remaining)
+  // Filter "Can Deliver Soon" orders (<= 5 mins remaining)
   const canDeliverSoonOrders = orders.filter(
-    (o) => o.status === 'READY' || (o.minutesRemaining !== undefined && o.minutesRemaining <= 5)
+    (o) => o.minutesRemaining !== undefined && o.minutesRemaining <= 5
   );
 
   const regularQueueOrders = orders.filter(
-    (o) => o.status !== 'READY' && (o.minutesRemaining === undefined || o.minutesRemaining > 5)
+    (o) => o.minutesRemaining === undefined || o.minutesRemaining > 5
   );
 
   return (
@@ -119,7 +119,7 @@ export const ManagerSmartQueuePage: React.FC = () => {
             Smart Order Queue & Kitchen Dispatch
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Auto-prioritized by requested preparation time, cook time, and customer arrival
+            Auto-prioritized by requested order time and customer arrival
           </p>
         </div>
 

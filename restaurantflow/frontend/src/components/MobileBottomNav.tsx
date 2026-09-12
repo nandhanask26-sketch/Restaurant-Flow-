@@ -28,8 +28,7 @@ export const MobileBottomNav: React.FC = () => {
 
   const managerLinks: NavLinkItem[] = [
     { to: '/manager/profile', icon: Store, label: 'Profile' },
-    { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan QR' },
-    { to: '/manager/smart-queue', icon: Clock, label: 'Queue' },
+    { to: '/manager/qr-scanner', icon: ScanLine, label: 'Scan & Queue' },
     { to: '/manager/orders', icon: ListOrdered, label: 'Orders' },
     { to: '/manager/menu', icon: Utensils, label: 'Menu' },
     { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },

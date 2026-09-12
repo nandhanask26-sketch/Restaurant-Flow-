@@ -42,7 +42,7 @@ export class AnalyticsRepository {
       SELECT 
         COUNT(CASE WHEN DATE(o.created_at) = CURRENT_DATE THEN 1 END) as today_orders,
         COUNT(o.id) as all_time_orders,
-        COUNT(CASE WHEN o.status IN ('CONFIRMED', 'PREPARING', 'READY') THEN 1 END) as waiting_orders_to_deliver,
+        COUNT(CASE WHEN o.status = 'CONFIRMED' THEN 1 END) as waiting_orders_to_deliver,
         COUNT(CASE WHEN o.status = 'CONFIRMED' THEN 1 END) as waiting_orders,
         COUNT(CASE WHEN o.status = 'PREPARING' THEN 1 END) as preparing_orders,
         COUNT(CASE WHEN o.status = 'READY' THEN 1 END) as ready_orders,
@@ -52,7 +52,7 @@ export class AnalyticsRepository {
         COALESCE(SUM(CASE WHEN p.status = 'PAID' AND DATE(o.created_at) = CURRENT_DATE THEN p.amount ELSE 0 END), 0) as today_revenue,
         COALESCE(SUM(CASE WHEN p.status = 'PAID' AND DATE_TRUNC('month', o.created_at) = DATE_TRUNC('month', CURRENT_DATE) THEN p.amount ELSE 0 END), 0) as monthly_revenue,
         COALESCE(AVG(CASE WHEN p.status = 'PAID' AND DATE(o.created_at) = CURRENT_DATE THEN p.amount END), 0) as avg_order_value,
-        COUNT(CASE WHEN o.status IN ('CONFIRMED', 'PREPARING', 'READY') THEN 1 END) as total_active_orders
+        COUNT(CASE WHEN o.status = 'CONFIRMED' THEN 1 END) as total_active_orders
       FROM orders o
       LEFT JOIN payments p ON o.id = p.order_id
       WHERE o.restaurant_id = $1;

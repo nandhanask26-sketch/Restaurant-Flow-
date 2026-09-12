@@ -208,7 +208,7 @@ export const ManagerOrdersPage: React.FC = () => {
     }
   };
 
-  const statusOptions = ['ALL', 'PREPARING', 'DELIVERED'];
+  const statusOptions = ['ALL', 'CONFIRMED', 'DELIVERED'];
 
   return (
     <div className="space-y-6 animate-fade-in pb-16">
@@ -703,7 +703,7 @@ export const ManagerOrdersPage: React.FC = () => {
                 <p className="text-slate-400">{selectedOrder.customerPhone}</p>
               </div>
               <div>
-                <span className="text-slate-400">Target Preparation Time:</span>
+                <span className="text-slate-400">Target Delivery / Pickup:</span>
                 <p className="font-bold text-amber-300">
                   {new Date(selectedOrder.requestedFoodAt).toLocaleTimeString()}
                 </p>
@@ -735,24 +735,6 @@ export const ManagerOrdersPage: React.FC = () => {
               <div className="flex flex-wrap gap-2">
                 {selectedOrder.status === 'CONFIRMED' && (
                   <button
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'PREPARING')}
-                    disabled={actionLoading}
-                    className="btn-primary text-xs py-2 px-3 bg-amber-600 hover:bg-amber-500"
-                  >
-                    Start Preparing
-                  </button>
-                )}
-                {selectedOrder.status === 'PREPARING' && (
-                  <button
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'READY')}
-                    disabled={actionLoading}
-                    className="btn-primary text-xs py-2 px-3 bg-emerald-600 hover:bg-emerald-500"
-                  >
-                    Mark as READY
-                  </button>
-                )}
-                {selectedOrder.status === 'READY' && (
-                  <button
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'DELIVERED')}
                     disabled={actionLoading}
                     className="btn-primary text-xs py-2 px-3 shadow-glow"
@@ -760,7 +742,7 @@ export const ManagerOrdersPage: React.FC = () => {
                     Mark as DELIVERED
                   </button>
                 )}
-                {['CONFIRMED', 'PREPARING'].includes(selectedOrder.status) && (
+                {selectedOrder.status === 'CONFIRMED' && (
                   <button
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'CANCELLED')}
                     disabled={actionLoading}

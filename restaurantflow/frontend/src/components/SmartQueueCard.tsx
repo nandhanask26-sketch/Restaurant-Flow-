@@ -18,14 +18,6 @@ export const SmartQueueCard: React.FC<SmartQueueCardProps> = ({
 }) => {
   const getUrgencyBadge = () => {
     const tag = order.urgencyTag || 'IN QUEUE';
-    if (tag === 'READY') {
-      return (
-        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse flex items-center gap-1">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          READY
-        </span>
-      );
-    }
     if (tag === 'OVERDUE') {
       return (
         <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-1">
@@ -52,22 +44,6 @@ export const SmartQueueCard: React.FC<SmartQueueCardProps> = ({
 
   const getNextAction = () => {
     if (order.status === 'CONFIRMED') {
-      return {
-        nextStatus: 'PREPARING',
-        label: 'Start Preparing',
-        icon: Flame,
-        colorClass: 'btn-secondary text-amber-400 border-amber-500/30 hover:bg-amber-500/10',
-      };
-    }
-    if (order.status === 'PREPARING') {
-      return {
-        nextStatus: 'READY',
-        label: 'Mark as Ready',
-        icon: CheckCircle2,
-        colorClass: 'btn-primary bg-emerald-600 hover:bg-emerald-500',
-      };
-    }
-    if (order.status === 'READY') {
       return {
         nextStatus: 'DELIVERED',
         label: 'Deliver Order',

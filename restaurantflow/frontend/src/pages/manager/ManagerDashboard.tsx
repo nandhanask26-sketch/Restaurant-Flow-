@@ -137,7 +137,7 @@ export const ManagerDashboard: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">
-                {restaurantName || 'Spice Garden'}
+                {restaurantName || "Nalan's Mess"}
               </h1>
               <span className="badge-blue text-[10px]">Dashboard</span>
             </div>
@@ -152,7 +152,7 @@ export const ManagerDashboard: React.FC = () => {
       {loading ? (
         <LoadingSkeleton count={2} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* 1. Today's Total Order */}
           <div className="glass-card p-5 bg-slate-900/90 border-slate-800 rounded-3xl relative overflow-hidden group hover:border-brand-500/40 transition">
             <div className="flex items-center justify-between text-slate-400 mb-3">
@@ -168,31 +168,7 @@ export const ManagerDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. Waiting to Deliver */}
-          <Link
-            to="/manager/smart-queue"
-            className="glass-card p-5 bg-slate-900/90 border-amber-500/30 rounded-3xl relative overflow-hidden group hover:border-amber-400 transition block"
-          >
-            <div className="flex items-center justify-between text-slate-400 mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                Waiting to Deliver
-              </span>
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="text-3xl font-black text-amber-400">
-              {kpis.waitingOrdersToDeliver}
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-amber-400/80 mt-2 pt-2 border-t border-slate-800/80">
-              <span>Pending kitchen / pickup</span>
-              <span className="flex items-center gap-0.5 font-bold group-hover:underline">
-                View Queue <ChevronRight className="w-3 h-3" />
-              </span>
-            </div>
-          </Link>
-
-          {/* 3. Delivered Order */}
+          {/* 2. Delivered Order */}
           <div className="glass-card p-5 bg-slate-900/90 border-sky-500/30 rounded-3xl relative overflow-hidden group hover:border-sky-400 transition">
             <div className="flex items-center justify-between text-slate-400 mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-sky-400">
