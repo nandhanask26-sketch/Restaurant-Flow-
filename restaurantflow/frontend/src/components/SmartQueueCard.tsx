@@ -16,32 +16,6 @@ export const SmartQueueCard: React.FC<SmartQueueCardProps> = ({
   onOpenQrScanner,
   onDeleteOrder,
 }) => {
-  const getUrgencyBadge = () => {
-    const tag = order.urgencyTag || 'IN QUEUE';
-    if (tag === 'OVERDUE') {
-      return (
-        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center gap-1">
-          <AlertCircle className="w-3.5 h-3.5" />
-          OVERDUE
-        </span>
-      );
-    }
-    if (tag.includes('5 MIN')) {
-      return (
-        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-bounce flex items-center gap-1">
-          <Flame className="w-3.5 h-3.5" />
-          {tag}
-        </span>
-      );
-    }
-    return (
-      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-400 border border-sky-500/40 flex items-center gap-1">
-        <Clock className="w-3.5 h-3.5" />
-        {tag}
-      </span>
-    );
-  };
-
   const getNextAction = () => {
     if (order.status === 'CONFIRMED') {
       return {
@@ -65,10 +39,8 @@ export const SmartQueueCard: React.FC<SmartQueueCardProps> = ({
             <span className="text-base font-mono font-extrabold text-brand-400">
               {order.orderToken}
             </span>
-            <StatusBadge status={order.status} size="sm" />
           </div>
           <div className="flex items-center gap-2">
-            {getUrgencyBadge()}
             {onDeleteOrder && (
               <button
                 onClick={() => onDeleteOrder(order)}
