@@ -28,8 +28,15 @@ export class PaymentService {
     userId: string,
     amount: number,
     method: PaymentMethod,
-    customerDetails: { name: string; email: string; phone: string }
+    customerDetails: { name: string; email: string; phone: string },
+    customTransactionId?: string
   ): Promise<Payment> {
+    const isUpiWithRef = method === 'UPI' && !!customTransactionId && customTransactionId.trim().length >= 4;
+    const finalStatus = isUpiWithRef ? 'PAID' : 'UNPAID';
+    const finalTransactionId = isUpiWithRef 
+      ? customTransactionId!.trim() 
+      : (method === 'CASH_ON_DELIVERY' ? `COD-${Date.now()}` : `PENDING-${Date.now()}`);
+
     // 1. Request intent from provider
     const intent = await this.provider.createPaymentIntent(orderId, amount, method, customerDetails);
 
@@ -41,18 +48,25 @@ export class PaymentService {
       amount,
       paymentMethod: method,
       paymentProvider: env.PAYMENT_PROVIDER,
-      status: intent.status,
-      transactionId: intent.transactionId,
-      providerResponse: intent.providerMetadata,
+      status: finalStatus,
+      transactionId: finalTransactionId,
+      providerResponse: {
+        ...intent.providerMetadata,
+        method,
+        customTransactionId: isUpiWithRef ? customTransactionId!.trim() : undefined,
+        verifiedAt: isUpiWithRef ? new Date().toISOString() : undefined,
+      },
     });
 
-    // 3. If online payment is PAID, auto-generate QR code for customer
-    if (intent.status === 'PAID') {
-      await this.qrService.generateOrderQr(orderId, restaurantId);
+    // 3. Auto-generate QR code for customer pass
+    await this.qrService.generateOrderQr(orderId, restaurantId);
+
+    if (finalStatus === 'PAID') {
       emitToRestaurant(restaurantId, SOCKET_EVENTS.ORDER_PAYMENT_UPDATED, {
         orderId,
         status: 'PAID',
         paymentMethod: method,
+        transactionId: finalTransactionId,
       });
       emitToUser(userId, SOCKET_EVENTS.ORDER_PAYMENT_UPDATED, {
         orderId,

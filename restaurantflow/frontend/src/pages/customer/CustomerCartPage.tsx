@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   ChevronRight,
   Store,
-  Check
+  Check,
+  ExternalLink
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCartStore } from '../../store/cartStore';
@@ -34,6 +35,7 @@ export const CustomerCartPage: React.FC = () => {
   } = useCartStore();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
+  const [upiRefNumber, setUpiRefNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upiId, setUpiId] = useState('nandhanask26@oksbi');
@@ -164,7 +166,7 @@ export const CustomerCartPage: React.FC = () => {
         return;
       }
 
-      const payload = {
+      const payload: any = {
         restaurantId: targetRestaurantId,
         preferredTimeType: 'ASAP',
         requestedFoodAt: new Date().toISOString(),
@@ -172,21 +174,18 @@ export const CustomerCartPage: React.FC = () => {
         items: sanitizedOrderItems,
       };
 
+      if (paymentMethod === 'UPI') {
+        const cleanUpiRef = upiRefNumber.trim();
+        if (!cleanUpiRef || cleanUpiRef.length < 4) {
+          setError('Please complete the payment in your UPI app and enter the 12-digit UPI Reference / UTR Number from your receipt.');
+          setLoading(false);
+          return;
+        }
+        payload.transactionId = cleanUpiRef;
+      }
+
       const { data } = await apiClient.post('/orders', payload);
       const createdOrder = data.data;
-
-      // If user selected UPI payment method, verify & mark payment as paid
-      if (paymentMethod === 'UPI') {
-        try {
-          const transactionId = `UPI-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-          await apiClient.post('/payments/verify', {
-            orderId: createdOrder.id,
-            transactionId,
-          });
-        } catch (payErr) {
-          console.warn('Payment auto-settle warning:', payErr);
-        }
-      }
 
       clearCart();
       // Redirect straight to the clean token number & generated QR pass
@@ -375,45 +374,79 @@ export const CustomerCartPage: React.FC = () => {
 
           {/* Inline QR Paying Display when selected */}
           {paymentMethod === 'UPI' && (
-            <div className="mt-4 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800/80">
-              <div className="p-2.5 bg-white rounded-xl shadow-lg border-2 border-brand-500/30 flex-shrink-0">
-                {qrCodeUrl ? (
-                  <img
-                    src={qrCodeUrl}
-                    alt="Store Payment QR"
-                    className="w-36 h-36 object-contain rounded-lg"
-                  />
-                ) : (
-                  <QRCodeSVG
-                    value={upiPayload}
-                    size={140}
-                    level="M"
-                    includeMargin={false}
-                  />
-                )}
+            <div className="mt-4 pt-4 border-t border-slate-800 space-y-4 bg-slate-950 p-4 rounded-xl border border-slate-800/80">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="p-2.5 bg-white rounded-xl shadow-lg border-2 border-brand-500/30 flex-shrink-0">
+                  {qrCodeUrl ? (
+                    <img
+                      src={qrCodeUrl}
+                      alt="Store Payment QR"
+                      className="w-36 h-36 object-contain rounded-lg"
+                    />
+                  ) : (
+                    <QRCodeSVG
+                      value={upiPayload}
+                      size={140}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2 text-center sm:text-left flex-1 min-w-0">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                      Amount to Pay:
+                    </span>
+                    <span className="text-2xl font-mono font-black text-brand-400">
+                      ₹{subtotal.toFixed(0)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+                      Payee:
+                    </span>
+                    <span className="text-xs font-bold text-white block">
+                      {upiName || 'Restaurant Official Gateway'}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400">
+                    Step 1: Scan this QR code with Google Pay, PhonePe, Paytm, or any UPI app to pay ₹{subtotal.toFixed(0)}.
+                  </p>
+
+                  {/* Mobile Deep Link */}
+                  <a
+                    href={upiPayload}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 border border-brand-500/30 text-xs font-bold transition mt-1"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Pay via UPI App (GPay / PhonePe)</span>
+                  </a>
+                </div>
               </div>
 
-              <div className="space-y-2 text-center sm:text-left flex-1 min-w-0">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                    Amount to Pay:
-                  </span>
-                  <span className="text-2xl font-mono font-black text-brand-400">
-                    ₹{subtotal.toFixed(0)}
-                  </span>
+              {/* Step 2: Enter 12-digit UPI Reference Number / UTR */}
+              <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1">
+                    <span>Step 2: Enter 12-Digit UPI Ref / UTR No. After Paying</span>
+                    <span className="text-rose-400">*</span>
+                  </label>
+                  <span className="text-[10px] text-brand-400 font-semibold">From Payment Receipt</span>
                 </div>
 
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-                    Payee:
-                  </span>
-                  <span className="text-xs font-bold text-white block">
-                    {upiName || 'Restaurant Official Gateway'}
-                  </span>
-                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. 425518291039 (From GPay / PhonePe / Paytm receipt)"
+                  value={upiRefNumber}
+                  onChange={(e) => setUpiRefNumber(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 30))}
+                  className="glass-input text-xs py-2.5 font-mono w-full tracking-wider"
+                />
 
-                <p className="text-[11px] text-slate-400">
-                  Scan this QR code with Google Pay, PhonePe, Paytm, or any UPI app to pay ₹{subtotal.toFixed(0)}.
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  ⚠️ <strong>Required for Verification</strong>: Once you pay in your UPI app, enter the 12-digit UPI Reference / UTR Number from your payment receipt to generate your pickup pass for the manager.
                 </p>
               </div>
             </div>
@@ -453,29 +486,51 @@ export const CustomerCartPage: React.FC = () => {
       </div>
 
       {/* Checkout Action Button */}
-      <button
-        type="button"
-        onClick={handleCheckout}
-        disabled={loading || restaurantStatus === false}
-        className="btn-primary w-full py-4 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-glow transition duration-150"
-      >
-        {loading ? (
-          <>
-            <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span>Generating Token & QR Pass...</span>
-          </>
-        ) : paymentMethod === 'UPI' ? (
-          <>
-            <span>Pay with UPI (₹{subtotal.toFixed(0)}) • Get Order Pass</span>
-            <ArrowRight className="w-5 h-5" />
-          </>
-        ) : (
-          <>
-            <span>Place Order (Cash on Delivery) • Get Token Pass</span>
-            <ArrowRight className="w-5 h-5" />
-          </>
-        )}
-      </button>
+      {paymentMethod === 'UPI' ? (
+        <button
+          type="button"
+          onClick={handleCheckout}
+          disabled={loading || restaurantStatus === false || upiRefNumber.trim().length < 4}
+          className={`w-full py-4 text-base font-extrabold flex items-center justify-center gap-2.5 rounded-2xl transition duration-150 ${
+            upiRefNumber.trim().length < 4
+              ? 'bg-slate-800/90 text-slate-400 border border-slate-700/80 cursor-not-allowed'
+              : 'btn-primary shadow-glow'
+          }`}
+        >
+          {loading ? (
+            <>
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Verifying UPI & Generating Token Pass...</span>
+            </>
+          ) : upiRefNumber.trim().length < 4 ? (
+            <span>Enter UPI Ref / UTR Number Above to Generate Token Pass</span>
+          ) : (
+            <>
+              <span>I Have Paid via UPI • Generate Token Pass (₹{subtotal.toFixed(0)})</span>
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleCheckout}
+          disabled={loading || restaurantStatus === false}
+          className="btn-primary w-full py-4 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-glow transition duration-150"
+        >
+          {loading ? (
+            <>
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Generating Token Pass...</span>
+            </>
+          ) : (
+            <>
+              <span>Place Order (Cash on Delivery) • Get Token Pass</span>
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 };

@@ -165,7 +165,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
             {isPaid ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                PAID via UPI (₹{order.totalAmount.toFixed(0)})
+                PAID via UPI (₹{order.totalAmount.toFixed(0)}){order.payment?.transactionId ? ` • Ref: ${order.payment.transactionId}` : ''}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">

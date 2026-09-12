@@ -47,10 +47,17 @@ export class OrderService {
       preferredTimeType: PreferredTimeType;
       requestedFoodAt: string | Date;
       paymentMethod: PaymentMethod;
+      transactionId?: string;
       notes?: string;
       items: { foodId: string; quantity: number }[];
     }
   ): Promise<Order> {
+    if (data.paymentMethod === 'UPI') {
+      if (!data.transactionId || data.transactionId.trim().length < 4) {
+        throw new BadRequestError('Please complete payment via your UPI app and enter the 12-digit UPI Reference / UTR Number from your payment receipt.');
+      }
+    }
+
     const client = await getClient();
 
     try {
@@ -167,7 +174,8 @@ export class OrderService {
           name: customerDetails.name,
           email: customerDetails.email || '',
           phone: customerDetails.phone || '',
-        }
+        },
+        data.transactionId
       );
       order.payment = payment;
 

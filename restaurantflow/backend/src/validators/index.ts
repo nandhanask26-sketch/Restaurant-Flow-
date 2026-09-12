@@ -151,6 +151,7 @@ export const createOrderSchema = z.object({
   preferredTimeType: z.enum(['ASAP', 'SCHEDULED']).default('ASAP'),
   requestedFoodAt: z.string().datetime().or(z.string().min(1)),
   paymentMethod: z.enum(['UPI', 'CARD', 'CASH_ON_DELIVERY', 'NET_BANKING']),
+  transactionId: z.string().min(4, 'UPI Reference / UTR Number must be at least 4 characters').max(100).optional(),
   notes: z.string().max(300).optional(),
   items: z
     .array(

@@ -428,6 +428,14 @@ export const ManagerQRScannerPage: React.FC = () => {
                       {isCashUnpaid ? `UNPAID — Collect ₹${scannedOrder.totalAmount.toFixed(0)} Cash` : 'PAID IN FULL ✅'}
                     </strong>
                   </div>
+                  {scannedOrder.payment?.transactionId && !isCashOnDelivery && (
+                    <div className="flex justify-between text-slate-200 pt-1 border-t border-emerald-500/20">
+                      <span className="text-slate-400">UPI Ref / UTR No:</span>
+                      <span className="font-mono font-bold text-emerald-300">
+                        {scannedOrder.payment.transactionId}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Ordered Food Items Bill Receipt */}
