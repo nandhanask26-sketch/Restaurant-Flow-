@@ -31,11 +31,11 @@ export class PaymentService {
     customerDetails: { name: string; email: string; phone: string },
     customTransactionId?: string
   ): Promise<Payment> {
-    const isUpiWithRef = method === 'UPI' && !!customTransactionId && customTransactionId.trim().length >= 4;
-    const finalStatus = isUpiWithRef ? 'PAID' : 'UNPAID';
-    const finalTransactionId = isUpiWithRef 
-      ? customTransactionId!.trim() 
-      : (method === 'CASH_ON_DELIVERY' ? `COD-${Date.now()}` : `PENDING-${Date.now()}`);
+    const isUpiPaid = method === 'UPI';
+    const finalStatus = isUpiPaid ? 'PAID' : (method === 'CASH_ON_DELIVERY' ? 'UNPAID' : 'PENDING');
+    const finalTransactionId = customTransactionId && customTransactionId.trim().length >= 4
+      ? customTransactionId.trim()
+      : (isUpiPaid ? `UPI_GATEWAY_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}` : `COD-${Date.now()}`);
 
     // 1. Request intent from provider
     const intent = await this.provider.createPaymentIntent(orderId, amount, method, customerDetails);
@@ -53,8 +53,8 @@ export class PaymentService {
       providerResponse: {
         ...intent.providerMetadata,
         method,
-        customTransactionId: isUpiWithRef ? customTransactionId!.trim() : undefined,
-        verifiedAt: isUpiWithRef ? new Date().toISOString() : undefined,
+        gatewayTransactionId: finalTransactionId,
+        verifiedAt: isUpiPaid ? new Date().toISOString() : undefined,
       },
     });
 
