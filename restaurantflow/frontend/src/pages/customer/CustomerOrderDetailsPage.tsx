@@ -86,7 +86,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
   const verificationCode = order.qrCode?.verificationCode || `VERIFY-${order.id.substring(0, 8).toUpperCase()}`;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in pb-16 px-3 sm:px-4">
+    <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6 animate-fade-in pb-16 px-2.5 sm:px-4 w-full max-w-full overflow-x-hidden">
       {/* Back navigation */}
       <Link
         to="/customer/orders"
@@ -97,7 +97,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
 
       {/* If UPI payment was REJECTED / FAILED: STRICT RULE: DO NOT DISPLAY ANY QR CODE! */}
       {isUpiRejected ? (
-        <div className="glass-card p-6 sm:p-8 bg-slate-900 border-2 border-rose-500/40 rounded-3xl shadow-2xl space-y-6 text-center">
+        <div className="glass-card p-5 sm:p-8 bg-slate-900 border-2 border-rose-500/40 rounded-3xl shadow-2xl space-y-5 text-center w-full max-w-full overflow-hidden">
           <div className="w-16 h-16 rounded-3xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto shadow-inner">
             <XCircle className="w-9 h-9" />
           </div>
@@ -135,7 +135,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
         </div>
       ) : (
         /* Main Card: Token Number & Generated Pickup QR (ONLY for correctly PAID orders or Cash on Delivery) */
-        <div className="glass-card p-6 bg-slate-900 border-2 border-brand-500/30 rounded-3xl shadow-2xl space-y-6 text-center">
+        <div className="glass-card p-4 sm:p-6 bg-slate-900 border-2 border-brand-500/30 rounded-3xl shadow-2xl space-y-5 sm:space-y-6 text-center w-full max-w-full overflow-hidden">
           {/* Token Number Highlight */}
           <div className="pb-4 border-b border-slate-800 space-y-1">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-brand-400">
@@ -151,8 +151,8 @@ export const CustomerOrderDetailsPage: React.FC = () => {
           </div>
 
           {/* Uniquely Generated Pickup QR Code with Prominent Token Number */}
-          <div className="flex flex-col items-center">
-            <div className="relative p-5 bg-white rounded-3xl inline-flex flex-col items-center shadow-2xl border-4 border-brand-500/40 mb-3">
+          <div className="flex flex-col items-center max-w-full">
+            <div className="relative p-3.5 sm:p-5 bg-white rounded-3xl inline-flex flex-col items-center shadow-2xl border-4 border-brand-500/40 mb-3 max-w-full">
               {/* Top QR Token Badge */}
               <div className="mb-2.5 px-3 py-1 bg-slate-900 text-brand-400 rounded-full text-xs font-mono font-black border border-slate-700 shadow-sm flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
@@ -161,7 +161,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
 
               <QRCodeSVG
                 value={verificationCode}
-                size={195}
+                size={175}
                 level="H"
                 includeMargin={false}
                 className={isRedeemed ? 'opacity-15 grayscale' : ''}

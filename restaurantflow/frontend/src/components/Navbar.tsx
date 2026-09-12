@@ -63,11 +63,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white truncate max-w-[170px] sm:max-w-xs">
+                <span className="font-extrabold text-sm sm:text-lg tracking-tight text-slate-900 dark:text-white truncate max-w-[115px] sm:max-w-xs">
                   {restaurantName || 'RestaurantFlow'}
                 </span>
               </div>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 truncate">
+              <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 truncate">
                 {isManager ? 'Manager Console' : 'Smart Ordering'}
               </span>
             </div>
@@ -99,12 +99,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
           <button
             type="button"
             onClick={() => setShowInstallModal(true)}
-            title="Scan QR or Install App on Mobile"
+            title="Download RestaurantFlow Android APK or Scan QR"
             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 dark:text-brand-400 border border-brand-500/30 text-xs font-bold transition shadow-sm"
           >
             <Smartphone className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" />
-            <span className="hidden sm:inline">📱 Get App</span>
-            <span className="sm:hidden text-[11px]">App</span>
+            <span className="hidden sm:inline">📱 Get APK</span>
+            <span className="sm:hidden text-[11px] font-black">APK</span>
           </button>
 
           {/* Dark / Light Mode Toggle Switch */}

@@ -58,17 +58,17 @@ export const CustomerLayout: React.FC = () => {
   }, [on, off, restaurantId]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col pb-20 lg:pb-0 transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col pb-20 lg:pb-0 transition-colors duration-200 w-full max-w-full overflow-x-hidden">
       <Navbar
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         restaurantStatus={restaurantStatus}
         restaurantName={restaurantName}
       />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto pt-16">
+      <div className="flex-1 flex max-w-7xl w-full mx-auto pt-16 overflow-x-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <main className="flex-1 lg:pl-64 p-3.5 sm:p-6 lg:p-8 min-w-0">
+        <main className="flex-1 lg:pl-64 p-2.5 sm:p-6 lg:p-8 min-w-0 w-full max-w-full overflow-x-hidden">
           <Outlet context={{ restaurantStatus, restaurantId, restaurantName }} />
         </main>
       </div>

@@ -226,7 +226,7 @@ export const CustomerCartPage: React.FC = () => {
   const upiPayload = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(upiName)}&am=${subtotal.toFixed(2)}&cu=INR&tn=Cafeteria_Food_Bill`;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in pb-16 px-3 sm:px-4">
+    <div className="max-w-3xl mx-auto space-y-5 sm:space-y-6 animate-fade-in pb-16 px-2.5 sm:px-4 w-full max-w-full overflow-x-hidden">
       {/* Clean Top Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div>
@@ -265,7 +265,7 @@ export const CustomerCartPage: React.FC = () => {
       )}
 
       {/* 1. CHOOSED FOOD ITEMS LIST */}
-      <div className="glass-card p-5 bg-slate-900 border-slate-800 space-y-4 shadow-xl">
+      <div className="glass-card p-3.5 sm:p-5 bg-slate-900 border-slate-800 space-y-4 shadow-xl w-full max-w-full overflow-hidden">
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
             <ShoppingBag className="w-4 h-4 text-brand-400" />
@@ -342,7 +342,7 @@ export const CustomerCartPage: React.FC = () => {
       </div>
 
       {/* 2. QR PAYING METHOD / CASH ON DELIVERY */}
-      <div className="glass-card p-5 bg-slate-900 border-slate-800 space-y-4 shadow-xl">
+      <div className="glass-card p-3.5 sm:p-5 bg-slate-900 border-slate-800 space-y-4 shadow-xl w-full max-w-full overflow-hidden">
         <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-800">
           <QrCode className="w-4 h-4 text-brand-400" />
           Choose Payment Method
@@ -521,8 +521,8 @@ export const CustomerCartPage: React.FC = () => {
 
       {/* UPI Gateway Authorization Modal */}
       {showUpiModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-md glass-card bg-slate-900 border-2 border-brand-500/40 p-6 rounded-3xl shadow-2xl space-y-5 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-[95vw] sm:max-w-md glass-card bg-slate-900 border-2 border-brand-500/40 p-4 sm:p-6 rounded-3xl shadow-2xl space-y-4 sm:space-y-5 text-center max-h-[95vh] overflow-y-auto">
             {/* Close Button */}
             <button
               onClick={() => !loading && setShowUpiModal(false)}

@@ -11,6 +11,8 @@ dist/
 **/dist/
 build/
 **/build/
+*.apk
+**/*.apk
 
 # Environment variables
 .env

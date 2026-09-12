@@ -1,0 +1,9 @@
+{
+	"appId": "com.restaurantflow.app",
+	"appName": "RestaurantFlow",
+	"webDir": "dist",
+	"server": {
+		"cleartext": true,
+		"androidScheme": "http"
+	}
+}

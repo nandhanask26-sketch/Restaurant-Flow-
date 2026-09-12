@@ -1,0 +1,27 @@
+{
+  "name": "RestaurantFlow — Smart Cafeteria & Restaurant App",
+  "short_name": "RestaurantFlow",
+  "description": "Real-time kitchen management, live token priority queues, instant QR verification, and mobile ordering platform.",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#0B0F17",
+  "theme_color": "#22C55E",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["food", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

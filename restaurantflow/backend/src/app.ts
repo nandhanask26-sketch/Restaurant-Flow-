@@ -1,6 +1,8 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import fs from 'fs';
 import routes from './routes';
 import { setupSwagger } from './config/swagger';
 import { errorHandler } from './middleware/errorMiddleware';
@@ -43,6 +45,35 @@ export function createApp(): Express {
 
   // API Routes
   app.use('/api', routes);
+
+  // Static directory for APK Downloads
+  const publicDir = path.join(__dirname, '../public');
+  if (fs.existsSync(publicDir)) {
+    app.use(express.static(publicDir));
+  }
+
+  // Direct APK download route for Android mobile phones
+  app.get('/RestaurantFlow.apk', (req: Request, res: Response) => {
+    const apkPath = path.join(__dirname, '../public/RestaurantFlow.apk');
+    if (fs.existsSync(apkPath)) {
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="RestaurantFlow.apk"');
+      res.download(apkPath, 'RestaurantFlow.apk');
+    } else {
+      res.status(404).send('APK compilation in progress. Please check back in a moment.');
+    }
+  });
+
+  app.get('/download/RestaurantFlow.apk', (req: Request, res: Response) => {
+    const apkPath = path.join(__dirname, '../public/RestaurantFlow.apk');
+    if (fs.existsSync(apkPath)) {
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="RestaurantFlow.apk"');
+      res.download(apkPath, 'RestaurantFlow.apk');
+    } else {
+      res.status(404).send('APK compilation in progress. Please check back in a moment.');
+    }
+  });
 
   // Root welcome route
   app.get('/', (req: Request, res: Response) => {
