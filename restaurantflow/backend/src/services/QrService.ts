@@ -91,9 +91,12 @@ export class QrService {
       );
     }
 
-    // 5. Check if cancelled
+    // 5. Check if cancelled or payment failed
     if (order.status === 'CANCELLED') {
       throw new BadRequestError(`Cannot verify QR code: Order #${order.orderToken} has been cancelled.`);
+    }
+    if (order.status === 'PAYMENT_FAILED' || (order.payment?.paymentMethod === 'UPI' && order.payment?.status !== 'PAID')) {
+      throw new BadRequestError(`⛔ REJECTED / UNPAID UPI ORDER! Token #${order.orderToken} was rejected or not paid. Food cannot be supplied!`);
     }
 
     // 6. Check Expiration

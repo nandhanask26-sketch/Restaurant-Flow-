@@ -4,7 +4,7 @@ import { PaymentRepository } from '../../repositories/PaymentRepository';
 import { OrderRepository } from '../../repositories/OrderRepository';
 import { QrService } from '../QrService';
 import { env } from '../../config/env';
-import { PaymentMethod, Payment } from '../../types';
+import { PaymentMethod, Payment, PaymentStatus } from '../../types';
 import { BadRequestError, NotFoundError } from '../../utils/errors';
 import { emitToRestaurant, emitToUser } from '../../websocket/socketServer';
 import { SOCKET_EVENTS } from '../../websocket/socketEvents';
@@ -29,13 +29,24 @@ export class PaymentService {
     amount: number,
     method: PaymentMethod,
     customerDetails: { name: string; email: string; phone: string },
-    customTransactionId?: string
+    customTransactionId?: string,
+    forcedPaymentStatus?: PaymentStatus
   ): Promise<Payment> {
-    const isUpiPaid = method === 'UPI';
-    const finalStatus = isUpiPaid ? 'PAID' : (method === 'CASH_ON_DELIVERY' ? 'UNPAID' : 'PENDING');
+    let finalStatus: PaymentStatus;
+    if (forcedPaymentStatus) {
+      finalStatus = forcedPaymentStatus;
+    } else if (method === 'CASH_ON_DELIVERY') {
+      finalStatus = 'UNPAID';
+    } else if (method === 'UPI') {
+      finalStatus = 'PAID';
+    } else {
+      finalStatus = 'PENDING';
+    }
+
+    const isUpiPaid = method === 'UPI' && finalStatus === 'PAID';
     const finalTransactionId = customTransactionId && customTransactionId.trim().length >= 4
       ? customTransactionId.trim()
-      : (isUpiPaid ? `UPI_GATEWAY_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}` : `COD-${Date.now()}`);
+      : (isUpiPaid ? `UPI_GATEWAY_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}` : (finalStatus === 'FAILED' ? `UPI_FAILED_${Date.now()}` : `COD-${Date.now()}`));
 
     // 1. Request intent from provider
     const intent = await this.provider.createPaymentIntent(orderId, amount, method, customerDetails);
@@ -58,8 +69,11 @@ export class PaymentService {
       },
     });
 
-    // 3. Auto-generate QR code for customer pass
-    await this.qrService.generateOrderQr(orderId, restaurantId);
+    // 3. STRICT RULE: Auto-generate QR code ONLY for successfully PAID orders or CASH_ON_DELIVERY!
+    // If UPI payment was rejected / failed, DO NOT generate a QR code!
+    if (finalStatus === 'PAID' || method === 'CASH_ON_DELIVERY') {
+      await this.qrService.generateOrderQr(orderId, restaurantId);
+    }
 
     if (finalStatus === 'PAID') {
       emitToRestaurant(restaurantId, SOCKET_EVENTS.ORDER_PAYMENT_UPDATED, {
@@ -71,6 +85,17 @@ export class PaymentService {
       emitToUser(userId, SOCKET_EVENTS.ORDER_PAYMENT_UPDATED, {
         orderId,
         status: 'PAID',
+      });
+    } else if (finalStatus === 'FAILED') {
+      emitToRestaurant(restaurantId, SOCKET_EVENTS.ORDER_PAYMENT_UPDATED, {
+        orderId,
+        status: 'FAILED',
+        paymentMethod: method,
+        transactionId: finalTransactionId,
+      });
+      emitToUser(userId, SOCKET_EVENTS.ORDER_PAYMENT_UPDATED, {
+        orderId,
+        status: 'FAILED',
       });
     }
 

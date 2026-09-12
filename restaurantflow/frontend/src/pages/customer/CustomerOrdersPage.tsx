@@ -121,13 +121,19 @@ export const CustomerOrdersPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSelectedQrOrder(order)}
-                    className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-brand-400 border-brand-500/30 hover:bg-brand-500/10"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    Show QR
-                  </button>
+                  {order.payment?.status === 'PAID' || order.paymentMethod === 'CASH_ON_DELIVERY' ? (
+                    <button
+                      onClick={() => setSelectedQrOrder(order)}
+                      className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5 text-brand-400 border-brand-500/30 hover:bg-brand-500/10"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      Show QR
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5 rounded-xl">
+                      Rejected (No QR)
+                    </span>
+                  )}
 
                   <Link
                     to={`/customer/orders/${order.id}`}

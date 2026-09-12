@@ -48,12 +48,17 @@ export class OrderService {
       requestedFoodAt: string | Date;
       paymentMethod: PaymentMethod;
       transactionId?: string;
+      paymentStatus?: 'PAID' | 'FAILED' | 'REJECTED' | 'UNPAID';
       notes?: string;
       items: { foodId: string; quantity: number }[];
     }
   ): Promise<Order> {
+    const isUpiRejected = data.paymentMethod === 'UPI' && (data.paymentStatus === 'FAILED' || data.paymentStatus === 'REJECTED');
+
     if (data.paymentMethod === 'UPI') {
-      if (!data.transactionId || data.transactionId.trim().length < 4) {
+      if (isUpiRejected) {
+        data.transactionId = `UPI_REJECTED_${Date.now()}`;
+      } else if (!data.transactionId || data.transactionId.trim().length < 4) {
         data.transactionId = `UPI_GATEWAY_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
       }
     }
@@ -128,7 +133,7 @@ export class OrderService {
 
       // 4. Temporary placeholder token to create order row
       const tempToken = `RF-TEMP-${Date.now()}`;
-      const initialStatus: OrderStatus = data.paymentMethod === 'CASH_ON_DELIVERY' ? 'CONFIRMED' : 'CONFIRMED';
+      const initialStatus: OrderStatus = isUpiRejected ? 'PAYMENT_FAILED' : 'CONFIRMED';
 
       const order = await this.orderRepo.create(
         {
@@ -164,6 +169,10 @@ export class OrderService {
       await client.query('COMMIT');
 
       // 6. Process Payment
+      const forcedPaymentStatus = isUpiRejected
+        ? 'FAILED'
+        : (data.paymentMethod === 'CASH_ON_DELIVERY' ? 'UNPAID' : 'PAID');
+
       const payment = await this.paymentService.processOrderPayment(
         order.id,
         data.restaurantId,
@@ -175,16 +184,20 @@ export class OrderService {
           email: customerDetails.email || '',
           phone: customerDetails.phone || '',
         },
-        data.transactionId
+        data.transactionId,
+        forcedPaymentStatus
       );
       order.payment = payment;
 
-      // 7. Ensure QR Code is generated & attached for the customer (Online Paid and COD)
-      let qr = await this.qrService.getQrForOrder(order.id);
-      if (!qr) {
-        qr = await this.qrService.generateOrderQr(order.id, data.restaurantId);
+      // 7. CRITICAL RULE: Ensure QR Code is generated & attached ONLY for correctly PAID orders or Cash on Delivery!
+      // If customer tried to pay using UPI and was REJECTED / FAILED, NEVER generate or attach QR!
+      if (payment.status === 'PAID' || data.paymentMethod === 'CASH_ON_DELIVERY') {
+        let qr = await this.qrService.getQrForOrder(order.id);
+        if (!qr) {
+          qr = await this.qrService.generateOrderQr(order.id, data.restaurantId);
+        }
+        order.qrCode = qr;
       }
-      order.qrCode = qr;
 
       // 8. Real-time Notification via Socket.IO
       emitToRestaurant(data.restaurantId, SOCKET_EVENTS.ORDER_CREATED, order);
@@ -244,8 +257,12 @@ export class OrderService {
     if (!order) {
       throw new NotFoundError('Order not found');
     }
-    const qr = await this.qrService.getQrForOrder(order.id);
-    if (qr) order.qrCode = qr;
+    // Only attach QR if the order was successfully paid via UPI or is Cash on Delivery.
+    // If UPI payment was rejected / failed, never attach QR!
+    if (order.payment?.status === 'PAID' || order.paymentMethod === 'CASH_ON_DELIVERY') {
+      const qr = await this.qrService.getQrForOrder(order.id);
+      if (qr) order.qrCode = qr;
+    }
     return order;
   }
 

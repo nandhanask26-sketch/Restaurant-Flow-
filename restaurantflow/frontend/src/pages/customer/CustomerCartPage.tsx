@@ -16,7 +16,10 @@ import {
   Check,
   ExternalLink,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  X,
+  XCircle,
+  Lock
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useCartStore } from '../../store/cartStore';
@@ -38,6 +41,8 @@ export const CustomerCartPage: React.FC = () => {
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
   const [loading, setLoading] = useState(false);
+  const [showUpiModal, setShowUpiModal] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<'PAID' | 'FAILED' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upiId, setUpiId] = useState('nandhanask26@oksbi');
   const [upiName, setUpiName] = useState('SK Nandhana');
@@ -116,7 +121,7 @@ export const CustomerCartPage: React.FC = () => {
     setTimeout(() => setCopiedUpi(false), 2000);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (forcedStatus: 'PAID' | 'FAILED' = 'PAID') => {
     if (items.length === 0) return;
 
     if (restaurantStatus === false) {
@@ -125,6 +130,7 @@ export const CustomerCartPage: React.FC = () => {
     }
 
     setLoading(true);
+    setProcessingStatus(forcedStatus);
     setError(null);
 
     try {
@@ -176,15 +182,20 @@ export const CustomerCartPage: React.FC = () => {
       };
 
       if (paymentMethod === 'UPI') {
-        // Automated Gateway verification — no manual 12-digit UTR typing required!
-        payload.transactionId = `UPI_GATEWAY_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+        payload.paymentStatus = forcedStatus;
+        if (forcedStatus === 'FAILED') {
+          payload.transactionId = `UPI_REJECTED_${Date.now()}`;
+        } else {
+          payload.transactionId = `UPI_GATEWAY_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+        }
       }
 
       const { data } = await apiClient.post('/orders', payload);
       const createdOrder = data.data;
 
       clearCart();
-      // Redirect straight to the clean token number & generated QR pass
+      setShowUpiModal(false);
+      // Redirect straight to the clean token number & pass page
       navigate(`/customer/orders/${createdOrder.id}`);
     } catch (err: any) {
       const msg =
@@ -194,6 +205,7 @@ export const CustomerCartPage: React.FC = () => {
       setError(msg);
     } finally {
       setLoading(false);
+      setProcessingStatus(null);
     }
   };
 
@@ -479,26 +491,17 @@ export const CustomerCartPage: React.FC = () => {
       {paymentMethod === 'UPI' ? (
         <button
           type="button"
-          onClick={handleCheckout}
+          onClick={() => setShowUpiModal(true)}
           disabled={loading || restaurantStatus === false}
           className="btn-primary w-full py-4 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-glow transition duration-150"
         >
-          {loading ? (
-            <>
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Verifying with UPI Gateway & Generating Token Pass...</span>
-            </>
-          ) : (
-            <>
-              <span>Pay ₹{subtotal.toFixed(0)} via UPI Gateway • Get Token Pass</span>
-              <ArrowRight className="w-5 h-5" />
-            </>
-          )}
+          <span>Pay ₹{subtotal.toFixed(0)} via UPI Gateway • Authorize Payment</span>
+          <ArrowRight className="w-5 h-5" />
         </button>
       ) : (
         <button
           type="button"
-          onClick={handleCheckout}
+          onClick={() => handleCheckout('PAID')}
           disabled={loading || restaurantStatus === false}
           className="btn-primary w-full py-4 text-base font-extrabold flex items-center justify-center gap-2.5 shadow-glow transition duration-150"
         >
@@ -514,6 +517,103 @@ export const CustomerCartPage: React.FC = () => {
             </>
           )}
         </button>
+      )}
+
+      {/* UPI Gateway Authorization Modal */}
+      {showUpiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md glass-card bg-slate-900 border-2 border-brand-500/40 p-6 rounded-3xl shadow-2xl space-y-5 text-center">
+            {/* Close Button */}
+            <button
+              onClick={() => !loading && setShowUpiModal(false)}
+              disabled={loading}
+              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition disabled:opacity-30"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand-500/10 text-brand-400 text-xs font-bold border border-brand-500/30">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Automated UPI Payment Gateway</span>
+            </div>
+
+            <div>
+              <h3 className="text-xl font-black text-white">Authorize UPI Payment</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Amount to Pay:{' '}
+                <span className="font-mono font-bold text-brand-400 text-base">
+                  ₹{subtotal.toFixed(0)}
+                </span>
+              </p>
+            </div>
+
+            {/* Payee Info */}
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-1 text-left">
+              <div className="flex justify-between text-slate-300">
+                <span className="text-slate-400">Merchant Payee:</span>
+                <span className="font-bold text-white">{upiName || 'Restaurant Official Gateway'}</span>
+              </div>
+              <div className="flex justify-between text-slate-300">
+                <span className="text-slate-400">UPI VPA:</span>
+                <span className="font-mono text-brand-400 font-semibold">{upiId}</span>
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="p-3.5 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-xs text-slate-300 text-left space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-brand-300">
+                <ShieldCheck className="w-4 h-4 text-brand-400" />
+                <span>Verification & Pass Issuance Rule</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                • <strong>Only customers who pay correctly receive the generated QR pass.</strong><br />
+                • If payment is rejected, cancelled, or failed, <strong>NO QR code</strong> will be generated.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => handleCheckout('PAID')}
+                disabled={loading}
+                className="btn-primary w-full py-3.5 text-sm font-black flex items-center justify-center gap-2 shadow-glow"
+              >
+                {loading && processingStatus === 'PAID' ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Verifying Bank Payment & Generating QR...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                    <span>I Paid Correctly • Authorize & Generate Pass (₹{subtotal.toFixed(0)})</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCheckout('FAILED')}
+                disabled={loading}
+                className="w-full py-3 text-xs font-bold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-2xl flex items-center justify-center gap-2 transition disabled:opacity-50"
+              >
+                {loading && processingStatus === 'FAILED' ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
+                    <span>Recording Payment Failure...</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-rose-400" />
+                    <span>Simulate Payment Rejected / Cancelled (No QR)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
