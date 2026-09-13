@@ -59,18 +59,19 @@ export const ManagerLogin: React.FC = () => {
         password: cleanPassword 
       });
 
-      // Handle both wrapped { data: { user... } } and unwrapped { user... } response formats
+      // Handle nested { user: {...}, accessToken } and flat { id, email, role, token } formats
       const payload = response.data?.data || response.data;
-      const user = payload?.user;
-      const accessToken = payload?.accessToken;
-      const refreshToken = payload?.refreshToken;
-      const restaurantId = payload?.restaurantId;
+      const user = payload?.user || (payload?.id || payload?.email ? payload : null);
+      const accessToken = payload?.accessToken || payload?.token || '';
+      const refreshToken = payload?.refreshToken || payload?.token || '';
+      const restaurantId = payload?.restaurantId || user?.restaurantId || null;
 
       if (!user) {
         throw new Error('User profile data missing in server response.');
       }
 
-      if (user.role !== 'RESTAURANT_MANAGER' && user.role !== 'ADMIN') {
+      const role = String(user.role || '').toUpperCase();
+      if (role !== 'RESTAURANT_MANAGER' && role !== 'MANAGER' && role !== 'ADMIN') {
         setError('This portal is strictly for authorized restaurant managers.');
         return;
       }
