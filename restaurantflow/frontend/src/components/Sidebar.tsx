@@ -61,14 +61,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-30 w-64 bg-white dark:bg-[#0F172A] border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 lg:translate-x-0 shadow-sm ${
+        className={`fixed top-16 bottom-0 left-0 z-40 w-64 bg-[#FBF7EE] dark:bg-[#151921] border-r border-[#E8DFD1] dark:border-stone-800 transition-transform duration-300 shadow-xl lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="h-full flex flex-col justify-between p-4 overflow-y-auto">
           <div className="space-y-1.5">
-            <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {isManager ? 'Management Hub' : 'Ordering Menu'}
+            <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#78716C] dark:text-stone-400">
+              {isManager ? 'Management Console' : 'Ordering Menu'}
             </div>
 
             {links.map((link) => {
@@ -81,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 ${
                       isActive
-                        ? 'bg-brand-500/15 text-brand-600 dark:text-brand-400 border border-brand-500/30 font-bold shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                        ? 'bg-[#0D5C3A]/10 text-[#0D5C3A] dark:text-emerald-400 border border-[#0D5C3A]/25 font-bold shadow-xs'
+                        : 'text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/50 dark:hover:bg-stone-800/60'
                     }`
                   }
                 >

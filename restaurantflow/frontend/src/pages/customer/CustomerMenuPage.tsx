@@ -1,6 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Search, Utensils, AlertCircle, X, Sparkles } from 'lucide-react';
+import { 
+  Search, 
+  Utensils, 
+  AlertCircle, 
+  X, 
+  Sparkles,
+  LayoutGrid,
+  Coffee,
+  Flame,
+  Moon,
+  CupSoda,
+  Leaf
+} from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { Food } from '../../types';
 import { FoodCard } from '../../components/FoodCard';
@@ -13,14 +25,14 @@ export const MEAL_PERIODS: {
   id: MealPeriod;
   label: string;
   sublabel: string;
-  time: string;
+  icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { id: 'ALL', label: 'All Items', sublabel: 'Full Menu', time: 'All Day' },
-  { id: 'BREAKFAST', label: 'Breakfast', sublabel: 'Tiffin & Dosa', time: '7:00 AM – 11:30 AM' },
-  { id: 'LUNCH', label: 'Lunch', sublabel: 'Meals & Biriyani', time: '12:00 PM – 3:30 PM' },
-  { id: 'SNACKS', label: 'Evening Snacks', sublabel: 'Chaat & Baji', time: '4:00 PM – 6:30 PM' },
-  { id: 'DINNER', label: 'Dinner', sublabel: 'Parotta & Tiffin', time: '7:00 PM – 11:00 PM' },
-  { id: 'BEVERAGES', label: 'Beverages', sublabel: 'Juice & Hot Drinks', time: 'All Day' },
+  { id: 'ALL', label: 'All Items', sublabel: 'Full Menu', icon: LayoutGrid },
+  { id: 'BREAKFAST', label: 'Breakfast', sublabel: 'Tiffin & Dosa', icon: Coffee },
+  { id: 'LUNCH', label: 'Lunch', sublabel: 'Meals & Biriyani', icon: Utensils },
+  { id: 'SNACKS', label: 'Evening Snacks', sublabel: 'Chaat & Baji', icon: Flame },
+  { id: 'DINNER', label: 'Dinner', sublabel: 'Parotta & Tiffin', icon: Moon },
+  { id: 'BEVERAGES', label: 'Beverages', sublabel: 'Juice & Drinks', icon: CupSoda },
 ];
 
 export function matchesMealPeriod(food: Food, period: MealPeriod): boolean {
@@ -154,7 +166,7 @@ export const CustomerMenuPage: React.FC = () => {
     loadCatalog();
   }, [restaurantId]);
 
-  // Filter foods by Meal Period (Breakfast, Lunch, Evening Snacks, Dinner, Beverages), Search and Vegetarian
+  // Filter foods by Meal Period, Search and Vegetarian
   const filteredFoods = foods.filter((food) => {
     const matchMeal = matchesMealPeriod(food, selectedMealPeriod);
     const matchSearch =
@@ -166,52 +178,96 @@ export const CustomerMenuPage: React.FC = () => {
     return matchMeal && matchSearch && matchVeg;
   });
 
-  const getCountForPeriod = (period: MealPeriod) => {
-    return foods.filter((f) => matchesMealPeriod(f, period)).length;
-  };
-
   const currentPeriod = MEAL_PERIODS.find((p) => p.id === selectedMealPeriod);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Restaurant status banner if closed */}
       {restaurantStatus === false && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-400" />
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-500" />
           <span>
-            The restaurant is currently <strong>CLOSED</strong>. You can view menu items and prices, but cart checkout will open when the kitchen resumes.
+            The restaurant is currently <strong>CLOSED</strong>. You can browse menu items and prices, but ordering will resume when the kitchen opens.
           </span>
         </div>
       )}
 
-      {/* Header & Controls Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-2 border-b border-slate-800/80 w-full">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-100 flex items-center gap-2 tracking-tight">
-            <Utensils className="w-5 h-5 sm:w-6 sm:h-6 text-brand-400" />
-            Today's Fresh Menu
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-            Authentic South Indian specialties prepared fresh to order
-          </p>
+      {/* Artisanal South Indian Hero Banner matching reference image */}
+      <div className="relative rounded-3xl overflow-hidden border border-[#EADBCC] dark:border-slate-800 bg-gradient-to-r from-[#F7F2E8] via-[#FAF6EE] to-[#F1E8DC] dark:from-[#18202A] dark:via-[#141A22] dark:to-[#18202A] p-5 sm:p-7 md:p-8 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          {/* Left Side: Cursive quote, Bold Headline, Subtitle */}
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="font-script text-xl sm:text-2xl text-[#6B655F] dark:text-stone-300 italic">
+                Authentic Taste for a Better Tomorrow
+              </span>
+              <span className="text-emerald-700 dark:text-emerald-400 text-base">🍃</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-black tracking-tight text-[#1C1917] dark:text-slate-100 my-1">
+              Today's <span className="text-[#0D5C3A] dark:text-emerald-400">Fresh</span> Menu
+            </h1>
+
+            <p className="text-xs sm:text-sm md:text-base text-[#57534E] dark:text-stone-300 font-medium flex items-center gap-1.5 mt-2">
+              Authentic South Indian specialities prepared fresh to order <span className="text-[#0D5C3A] dark:text-emerald-400">✔</span>
+            </p>
+          </div>
+
+          {/* Right Side: Banana Leaf Feast Platter Image matching reference image */}
+          <div className="flex-shrink-0 flex justify-center md:justify-end">
+            <div className="relative w-full max-w-[320px] sm:max-w-[380px] lg:max-w-[420px] rounded-2xl overflow-hidden shadow-sm border border-[#E8DFD1]/60 dark:border-slate-800">
+              <img
+                src="/images/south_indian_dosa_feast.jpg"
+                alt="South Indian Traditional Dosa & Idli Feast"
+                className="w-full h-auto object-cover rounded-2xl"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Category Pills Bar and Search / Veg Controls */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
+        {/* Category Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          {MEAL_PERIODS.map((period) => {
+            const isSelected = selectedMealPeriod === period.id;
+            const Icon = period.icon;
+
+            return (
+              <button
+                key={period.id}
+                type="button"
+                onClick={() => setSelectedMealPeriod(period.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-150 flex-shrink-0 select-none ${
+                  isSelected
+                    ? 'bg-[#0D5C3A] text-white shadow-xs border border-[#0D5C3A]'
+                    : 'bg-white dark:bg-[#151C28] border border-[#EADBCC] dark:border-slate-800 text-[#1C1917] dark:text-slate-200 hover:bg-[#F5EFE6] dark:hover:bg-slate-800'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-stone-600 dark:text-slate-400'}`} />
+                <span className={isSelected ? 'text-white' : ''}>{period.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Search & Veg toggle */}
-        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
-          <div className="relative flex-1 sm:w-60 min-w-0">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* Search & Veg Only Toolbar */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <div className="relative flex-1 sm:w-56 min-w-0">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search dishes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="glass-input pl-9 pr-7 text-xs py-2 w-full rounded-xl"
+              className="bg-white dark:bg-[#151C28] border border-[#EADBCC] dark:border-slate-800 text-[#1C1917] dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 rounded-xl pl-9 pr-7 py-2 text-xs w-full focus:outline-none focus:ring-2 focus:ring-[#0D5C3A] transition shadow-2xs"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-white p-0.5"
                 title="Clear search"
               >
                 <X className="w-3.5 h-3.5" />
@@ -222,90 +278,27 @@ export const CustomerMenuPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setVegOnly((v) => !v)}
-            className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition duration-150 flex-shrink-0 ${
+            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition duration-150 flex-shrink-0 ${
               vegOnly
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm'
-                : 'bg-slate-900/90 text-slate-400 border-slate-800 hover:text-slate-200'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-600 shadow-2xs'
+                : 'bg-white dark:bg-[#151C28] text-stone-700 dark:text-slate-300 border-[#EADBCC] dark:border-slate-800 hover:border-emerald-500 hover:text-emerald-700'
             }`}
           >
-            <span
-              className={`w-2 h-2 rounded-full transition-all ${
-                vegOnly ? 'bg-emerald-400 shadow-sm animate-pulse' : 'bg-slate-600'
-              }`}
-            />
+            <Leaf className={`w-3.5 h-3.5 ${vegOnly ? 'text-emerald-600 fill-emerald-600' : 'text-stone-400'}`} />
             <span>Veg Only</span>
           </button>
         </div>
       </div>
 
-      {/* Professional Category Bar: All Items, Breakfast, Lunch, Evening Snacks, Dinner, Beverages */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-        {MEAL_PERIODS.map((period) => {
-          const isSelected = selectedMealPeriod === period.id;
-          const count = getCountForPeriod(period.id);
-
-          return (
-            <button
-              key={period.id}
-              onClick={() => setSelectedMealPeriod(period.id)}
-              className={`relative flex flex-col justify-between p-2.5 sm:p-3.5 rounded-2xl border text-left transition-all duration-200 group overflow-hidden ${
-                isSelected
-                  ? 'bg-gradient-to-b from-brand-500/15 via-slate-900/95 to-slate-900 border-brand-500/70 shadow-lg shadow-brand-500/10 ring-1 ring-brand-500/30'
-                  : 'bg-slate-900/75 hover:bg-slate-900 border-slate-800/80 hover:border-slate-700 text-slate-300'
-              }`}
-            >
-              {/* Active top accent indicator bar */}
-              {isSelected && (
-                <span className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-brand-400 via-emerald-400 to-brand-500 shadow-sm" />
-              )}
-
-              {/* Title & Count Badge */}
-              <div className="flex items-center justify-between gap-1.5 mb-2">
-                <span
-                  className={`text-xs sm:text-sm font-bold tracking-tight truncate ${
-                    isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'
-                  }`}
-                >
-                  {period.label}
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 transition ${
-                    isSelected
-                      ? 'bg-brand-500 text-slate-950 font-black shadow-sm'
-                      : 'bg-slate-800/90 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-200'
-                  }`}
-                >
-                  {count}
-                </span>
-              </div>
-
-              {/* Timing / Subtitle */}
-              <div className="space-y-0.5">
-                <span
-                  className={`text-[11px] font-medium block truncate ${
-                    isSelected ? 'text-brand-300' : 'text-slate-400 group-hover:text-slate-300'
-                  }`}
-                >
-                  {period.sublabel}
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  {period.time}
-                </span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
       {/* Category Results Summary Filter Status */}
-      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+      <div className="flex items-center justify-between text-xs text-[#78716C] dark:text-slate-400 px-1">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+          <Sparkles className="w-3.5 h-3.5 text-[#0D5C3A] dark:text-emerald-400" />
           <span>
-            Showing <strong className="text-slate-200 font-semibold">{filteredFoods.length}</strong> {filteredFoods.length === 1 ? 'dish' : 'dishes'} in <span className="text-brand-400 font-bold">{currentPeriod?.label}</span>
+            Showing <strong className="text-[#1C1917] dark:text-slate-200 font-bold">{filteredFoods.length}</strong> {filteredFoods.length === 1 ? 'dish' : 'dishes'} in <span className="text-[#0D5C3A] dark:text-emerald-400 font-extrabold">{currentPeriod?.label}</span>
           </span>
-          {vegOnly && <span className="text-emerald-400 font-medium">(Vegetarian only)</span>}
-          {searchTerm && <span className="text-slate-300">matching "{searchTerm}"</span>}
+          {vegOnly && <span className="text-emerald-700 dark:text-emerald-400 font-semibold">(Vegetarian only)</span>}
+          {searchTerm && <span className="text-stone-800 dark:text-slate-300">matching "{searchTerm}"</span>}
         </div>
 
         {(searchTerm || vegOnly || selectedMealPeriod !== 'ALL') && (
@@ -316,14 +309,14 @@ export const CustomerMenuPage: React.FC = () => {
               setVegOnly(false);
               setSelectedMealPeriod('ALL');
             }}
-            className="text-[11px] text-brand-400 hover:text-brand-300 hover:underline"
+            className="text-[11px] font-bold text-[#0D5C3A] dark:text-emerald-400 hover:underline"
           >
             Reset Filters
           </button>
         )}
       </div>
 
-      {/* Food Items Grid */}
+      {/* Food Items Grid: 4 cards in a row matching reference screenshot */}
       {loading ? (
         <LoadingSkeleton count={4} />
       ) : filteredFoods.length === 0 ? (
@@ -339,7 +332,7 @@ export const CustomerMenuPage: React.FC = () => {
           }}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {filteredFoods.map((food) => (
             <FoodCard
               key={food.id}
@@ -352,3 +345,4 @@ export const CustomerMenuPage: React.FC = () => {
     </div>
   );
 };
+

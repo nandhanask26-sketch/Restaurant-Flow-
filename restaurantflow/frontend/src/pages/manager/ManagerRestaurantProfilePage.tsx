@@ -24,14 +24,15 @@ import {
   Copy,
   Store,
   Trash2,
-  X
+  X,
+  Coffee
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiClient } from '../../api/client';
 import { Restaurant } from '../../types';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 
-const DEFAULT_COVER = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop&q=80';
+const DEFAULT_COVER = '/images/restaurant_interior_nalan.jpg';
 
 export const ManagerRestaurantProfilePage: React.FC = () => {
   const { restaurantId, setRestaurantName } = useOutletContext<{
@@ -103,7 +104,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
               upiName: data.upiName || 'SK Nandhana',
               openingTime: data.openingTime || '08:00',
               closingTime: data.closingTime || '22:00',
-              imageUrl: data.imageUrl || DEFAULT_COVER,
+              imageUrl: (data.imageUrl && !data.imageUrl.includes('unsplash.com')) ? data.imageUrl : DEFAULT_COVER,
               qrCodeUrl: data.qrCodeUrl || '',
               isOpen: data.isOpen ?? true,
             });
@@ -291,7 +292,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-7 animate-fade-in pb-20">
+    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in pb-20">
       {/* Hidden Native Document / File Picker for Cover */}
       <input
         ref={fileInputRef}
@@ -310,46 +311,174 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
         className="hidden"
       />
 
-      {/* 1. Header */}
-      <div>
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">Restaurant Profile & QR Settings</h1>
-        <p className="text-xs text-slate-400 mt-0.5">Customize restaurant details, kitchen status, and merchant payment QR code</p>
-      </div>
-
       {/* Error Message if any */}
       {error && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-3 animate-fade-in">
-          <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 flex items-center gap-3 animate-fade-in">
+          <AlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0" />
           <span className="text-xs font-semibold">{error}</span>
         </div>
       )}
 
+      {/* 1. Hero Showcase Card (Exact visual replica of reference) */}
+      <div className="rounded-[2.5rem] bg-white dark:bg-[#151A21] border border-[#ECE7DF] dark:border-stone-800 shadow-md shadow-stone-200/40 dark:shadow-none overflow-hidden grid grid-cols-1 lg:grid-cols-12 relative">
+        {/* Left Column: Brand, Story, Meta */}
+        <div className="lg:col-span-6 p-8 sm:p-12 lg:p-14 flex flex-col justify-between relative z-10">
+          {/* Subtle Artistic Botanical Leaf Illustration Watermark in Background */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-48 h-80 pointer-events-none opacity-25 dark:opacity-10 select-none overflow-hidden hidden sm:block">
+            <svg viewBox="0 0 160 260" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-emerald-800">
+              <path d="M140 10C100 50 60 130 80 250" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M82 120C65 100 40 105 30 125C45 140 75 130 82 120Z" fill="currentColor" opacity="0.6" />
+              <path d="M95 80C80 60 55 65 45 85C60 100 90 90 95 80Z" fill="currentColor" opacity="0.6" />
+              <path d="M110 40C98 25 78 30 70 48C82 60 105 52 110 40Z" fill="currentColor" opacity="0.6" />
+              <path d="M85 160C70 145 50 150 42 167C55 180 80 170 85 160Z" fill="currentColor" opacity="0.6" />
+              <path d="M92 200C80 190 62 195 58 210C68 220 88 210 92 200Z" fill="currentColor" opacity="0.6" />
+            </svg>
+          </div>
+
+          <div>
+            {/* Script Heading */}
+            <div className="flex items-center gap-2">
+              <span className="font-script text-3xl sm:text-4xl font-bold text-[#8B4513] tracking-wide">
+                Manage with Purpose
+              </span>
+              <span className="text-2xl select-none" role="img" aria-label="leaf">🍃</span>
+            </div>
+
+            {/* Subtitle */}
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1 font-normal">
+              Keep your restaurant details updated for a smoother service.
+            </p>
+
+            {/* Main Restaurant Title */}
+            <h1 className="font-serif font-extrabold text-3xl sm:text-4xl lg:text-[46px] text-[#0B3B2C] dark:text-emerald-400 tracking-tight mt-6 leading-tight">
+              {formData.name || "Nalan's Mess"}
+            </h1>
+
+            {/* Verified Restaurant Badge */}
+            <div className="mt-3.5">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0B3B2C] text-white text-xs font-semibold shadow-xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20" />
+                Verified Restaurant
+              </span>
+            </div>
+
+            {/* Description / Story */}
+            <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed mt-5 max-w-lg">
+              {formData.description ||
+                'Authentic South Indian Meals, Tiffin, Parotta, Dosa, Chaats and Fresh Juices crafted daily with fresh ingredients.'}
+            </p>
+
+            {/* Joined on & Operating Hours */}
+            <div className="mt-8 pt-6 border-t border-[#F0EBE1] dark:border-stone-800/80 flex items-center gap-6 sm:gap-10">
+              <div className="flex items-start gap-2.5">
+                <Calendar className="w-4 h-4 text-stone-600 dark:text-stone-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block leading-none">Joined on</span>
+                  <span className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 mt-1 block">
+                    {currentTime.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-8 w-px bg-stone-200 dark:bg-stone-700" />
+
+              <div className="flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-stone-600 dark:text-stone-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block leading-none">Operating Hours</span>
+                  <span className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 mt-1 block font-mono">
+                    {formatTime12h(formData.openingTime)} – {formatTime12h(formData.closingTime)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom handwritten quote with curved underline flourish */}
+          <div className="mt-8">
+            <div className="inline-block relative">
+              <p className="font-script text-2xl sm:text-3xl font-bold text-[#8B4513] tracking-wide">
+                Good Food Brings People Together
+              </p>
+              <svg className="w-full h-3 text-[#8B4513] opacity-80 mt-0.5" viewBox="0 0 260 12" fill="none">
+                <path d="M2 9C70 2 180 3 258 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: High Quality Restaurant Photo & Floating Badge */}
+        <div className="lg:col-span-6 relative min-h-[380px] lg:min-h-[520px] bg-stone-200 dark:bg-stone-800">
+          <img
+            src={formData.imageUrl || DEFAULT_COVER}
+            alt={formData.name || 'Restaurant Dining'}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = DEFAULT_COVER;
+            }}
+          />
+
+          {/* Choose cover image button */}
+          <div className="absolute top-4 right-4 z-10">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-black/60 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-2 transition hover:scale-105 active:scale-95"
+              title="Upload cover image directly from your documents"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-amber-300" />
+              <span>Change Photo</span>
+            </button>
+          </div>
+
+          {/* Floating Badge in Bottom Right (Exact match with reference) */}
+          <div className="absolute bottom-6 right-6 bg-black/75 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl border border-white/15 shadow-2xl flex items-center gap-3.5">
+            <div className="p-2 rounded-xl bg-white/10 text-amber-300">
+              <Coffee className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-script text-amber-300 text-xl font-bold leading-none tracking-wide">
+                South Indian
+              </p>
+              <p className="text-[11px] font-semibold tracking-wider uppercase text-white/90 leading-tight mt-0.5">
+                Tradition Served Fresh
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 2. Dedicated Open / Close Operational Status Controller */}
-      <div className="glass-card p-5 bg-slate-900 border-slate-800 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-        <div className="flex items-center gap-3.5">
+      <div className="p-6 rounded-3xl bg-white dark:bg-[#151A21] border border-[#ECE7DF] dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-4">
           <div
-            className={`p-3 rounded-2xl border transition-colors ${
+            className={`p-3.5 rounded-2xl border transition-colors ${
               formData.isOpen
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                ? 'bg-emerald-500/10 text-[#0D5C3A] dark:text-emerald-400 border-emerald-500/25'
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25'
             }`}
           >
             <Power className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-100">Restaurant Operational Status</span>
+              <span className="text-sm font-bold text-stone-900 dark:text-stone-100">Restaurant Operational Status</span>
               <span
-                className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                className={`text-[11px] font-black px-3 py-0.5 rounded-full border ${
                   formData.isOpen
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                    ? 'bg-emerald-500/10 text-[#0D5C3A] dark:text-emerald-400 border-emerald-500/30'
+                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
                 }`}
               >
                 {formData.isOpen ? 'ONLINE • ACCEPTING ORDERS' : 'OFFLINE • ORDERS PAUSED'}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
               {formData.isOpen
                 ? 'Kitchen is live. Customers can browse menu and place real-time orders.'
                 : 'Kitchen is paused. Customers will be notified that the restaurant is closed today.'}
@@ -358,17 +487,17 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
         </div>
 
         {/* 1-Click Open/Close Selector Buttons */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800 self-start sm:self-auto">
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 self-start sm:self-auto">
           <button
             type="button"
             onClick={handleToggleStatus}
             className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 ${
               formData.isOpen
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[#0D5C3A] text-white shadow-md shadow-[#0D5C3A]/25 scale-105'
+                : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${formData.isOpen ? 'bg-white animate-pulse' : 'bg-slate-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${formData.isOpen ? 'bg-white animate-pulse' : 'bg-stone-400'}`} />
             <span>OPEN TODAY</span>
           </button>
 
@@ -377,127 +506,30 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
             onClick={handleToggleStatus}
             className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 ${
               !formData.isOpen
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 scale-105'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/25 scale-105'
+                : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${!formData.isOpen ? 'bg-white' : 'bg-slate-500'}`} />
+            <span className={`w-2 h-2 rounded-full ${!formData.isOpen ? 'bg-white' : 'bg-stone-400'}`} />
             <span>CLOSED TODAY</span>
           </button>
         </div>
       </div>
 
-      {/* 3. Restaurant Profile Showcase Card with Document File Picker */}
-      <div className="glass-card bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative">
-        {/* Cover Banner */}
-        <div className="relative h-60 sm:h-72 w-full bg-slate-950 overflow-hidden group">
-          <img
-            src={formData.imageUrl || DEFAULT_COVER}
-            alt={formData.name || 'Restaurant'}
-            className="w-full h-full object-cover transition-all duration-500"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = DEFAULT_COVER;
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-
-          {/* Direct "Choose from Document / Files" Button */}
-          <div className="absolute top-4 right-4 z-10">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-slate-950/85 hover:bg-slate-900 text-white backdrop-blur-md border border-slate-700/80 shadow-2xl flex items-center gap-2 transition hover:scale-105 active:scale-95"
-              title="Upload image directly from your computer / documents"
-            >
-              <FolderOpen className="w-4 h-4 text-brand-400" />
-              <span>Choose from Document</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Identity & Body Preview */}
-        <div className="p-6 sm:p-8 relative -mt-14 sm:-mt-16 space-y-5">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-slate-900 border-4 border-slate-800 shadow-2xl overflow-hidden flex items-center justify-center text-white font-black text-2xl sm:text-3xl flex-shrink-0">
-              <div className="w-full h-full bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-inner">
-                {formData.name ? formData.name.charAt(0).toUpperCase() : 'R'}
-              </div>
-            </div>
-
-            <div className="text-center sm:text-left space-y-1 flex-1">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h2 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  {formData.name || 'Your Restaurant Name'}
-                </h2>
-                <span className="badge-emerald text-[10px] font-bold flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" />
-                  Verified
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 font-medium flex items-center justify-center sm:justify-start gap-1">
-                <Calendar className="w-3 h-3 text-brand-400" />
-                <span>
-                  {currentTime.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          {/* About text preview */}
-          <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-brand-400" />
-              About Our Restaurant
-            </span>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {formData.description || 'Describe your restaurant delicacies, cuisine specialties, and heritage.'}
-            </p>
-          </div>
-
-          {/* Coordinates Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start gap-3">
-              <Clock className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Operating Hours</span>
-                <span className="font-bold text-white font-mono">
-                  {formatTime12h(formData.openingTime)} – {formatTime12h(formData.closingTime)}
-                </span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start gap-3">
-              <MapPin className="w-4 h-4 text-brand-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Location</span>
-                <span className="font-semibold text-slate-200 line-clamp-1">
-                  {formData.address || 'Provide physical street address'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Restaurant Profile Management Editor Form (Auto-Saving) */}
+      {/* 3. Restaurant Profile Management Editor Form (Auto-Saving) */}
       <div className="space-y-6">
         {/* Business Details & Description */}
-        <div className="glass-card p-6 bg-slate-900 border-slate-800 rounded-3xl space-y-5">
-          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-            <Edit3 className="w-4 h-4 text-brand-400" />
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#151A21] border border-[#ECE7DF] dark:border-stone-800 space-y-5 shadow-sm">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+            <Edit3 className="w-4 h-4 text-[#0D5C3A] dark:text-emerald-400" />
             Restaurant Details & Culinary Story
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Name */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Restaurant Name <span className="text-rose-400">*</span>
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
+                Restaurant Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -505,13 +537,13 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g. Nalan's Mess"
-                className="input-field text-xs"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
               />
             </div>
 
             {/* Description / Story */}
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
                 About / Culinary Description
               </label>
               <textarea
@@ -519,24 +551,24 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                 value={formData.description}
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe your authentic food items, specialties, and ingredients..."
-                className="input-field text-xs resize-none"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all resize-none"
               />
             </div>
           </div>
         </div>
 
         {/* Location, Operating Hours & Contact */}
-        <div className="glass-card p-6 bg-slate-900 border-slate-800 rounded-3xl space-y-5">
-          <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-brand-400" />
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#151A21] border border-[#ECE7DF] dark:border-stone-800 space-y-5 shadow-sm">
+          <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[#0D5C3A] dark:text-emerald-400" />
             Location, Operating Hours & Contact Coordinates
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Address */}
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Physical Address & Landmark <span className="text-rose-400">*</span>
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
+                Physical Address & Landmark <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -544,39 +576,39 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                 value={formData.address}
                 onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
                 placeholder="e.g. 124 Gourmet Boulevard, Koramangala 4th Block, Bengaluru"
-                className="input-field text-xs"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
               />
             </div>
 
             {/* Opening Time */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
                 Opening Time (Daily)
               </label>
               <input
                 type="time"
                 value={formData.openingTime}
                 onChange={(e) => setFormData((prev) => ({ ...prev, openingTime: e.target.value }))}
-                className="input-field text-xs"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
               />
             </div>
 
             {/* Closing Time */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
                 Closing Time (Daily)
               </label>
               <input
                 type="time"
                 value={formData.closingTime}
                 onChange={(e) => setFormData((prev) => ({ ...prev, closingTime: e.target.value }))}
-                className="input-field text-xs"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
               />
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
                 Contact Phone
               </label>
               <input
@@ -584,13 +616,13 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                 value={formData.phone}
                 onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                 placeholder="e.g. +91 98765 43210"
-                className="input-field text-xs"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
               />
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
                 Official Support Email
               </label>
               <input
@@ -598,26 +630,26 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                 value={formData.email}
                 onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                 placeholder="e.g. contact@nalansmess.com"
-                className="input-field text-xs"
+                className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
               />
             </div>
           </div>
         </div>
 
         {/* Customer Payment & QR Code Gateway Configuration */}
-        <div className="glass-card p-6 bg-slate-900 border-slate-800 rounded-3xl space-y-5">
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#151A21] border border-[#ECE7DF] dark:border-stone-800 space-y-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <QrCode className="w-4 h-4 text-brand-400" />
+            <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-[#0D5C3A] dark:text-emerald-400" />
               Customer Payment & QR Gateway Configuration
             </h3>
             <div className="flex items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setShowStandeeModal(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-xs font-semibold text-slate-200 border border-slate-700 flex items-center gap-1.5 transition hover:scale-105"
+                className="px-3.5 py-1.5 rounded-xl bg-[#FAF8F5] dark:bg-stone-800 hover:bg-[#F3EFE7] dark:hover:bg-stone-750 text-xs font-bold text-stone-800 dark:text-stone-200 border border-[#E2DDD3] dark:border-stone-700 flex items-center gap-1.5 transition hover:scale-105"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-brand-400" />
+                <Maximize2 className="w-3.5 h-3.5 text-[#0D5C3A] dark:text-emerald-400" />
                 <span>Customer Standee & Print</span>
               </button>
               <span className="badge-emerald text-[10px]">Instant Live Updates</span>
@@ -628,7 +660,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
             <div className="lg:col-span-7 space-y-4">
               {/* Beneficiary Display Name */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1.5">
                   Merchant / Beneficiary Display Name
                 </label>
                 <input
@@ -636,21 +668,21 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                   value={formData.upiName}
                   onChange={(e) => setFormData((prev) => ({ ...prev, upiName: e.target.value }))}
                   placeholder="e.g. SK Nandhana / Nalan's Mess"
-                  className="input-field text-xs font-semibold"
+                  className="w-full bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-700 text-stone-900 dark:text-stone-100 rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-[#0D5C3A]/20 focus:border-[#0D5C3A] outline-none transition-all"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-stone-500 dark:text-stone-400 mt-1">
                   Name shown to customers during payment verification and on physical table standees.
                 </p>
               </div>
 
               {/* Custom Payment QR Upload */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+              <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-200">
+                    <label className="block text-xs font-bold text-stone-800 dark:text-stone-200">
                       Payment QR Code Image
                     </label>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-stone-500 dark:text-stone-400">
                       Upload your store's Google Pay, PhonePe, Paytm, or custom UPI standee QR code from documents or photos.
                     </p>
                   </div>
@@ -663,7 +695,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => qrFileInputRef.current?.click()}
-                    className="px-3.5 py-2 rounded-xl bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
+                    className="px-3.5 py-2 rounded-xl bg-[#0D5C3A]/10 hover:bg-[#0D5C3A]/20 text-[#0D5C3A] dark:text-emerald-400 border border-[#0D5C3A]/25 text-xs font-bold flex items-center gap-1.5 transition"
                   >
                     <UploadCloud className="w-3.5 h-3.5" />
                     <span>{formData.qrCodeUrl ? 'Change QR Image from Document' : 'Upload QR Image from Document'}</span>
@@ -673,7 +705,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, qrCodeUrl: '' }))}
-                      className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition"
+                      className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold flex items-center gap-1.5 transition"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Reset to Standard QR</span>
@@ -684,13 +716,13 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
             </div>
 
             {/* Live QR Preview Box */}
-            <div className="lg:col-span-5 p-5 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col items-center text-center space-y-3">
+            <div className="lg:col-span-5 p-5 rounded-2xl bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E2DDD3] dark:border-stone-800 flex flex-col items-center text-center space-y-3">
               <div className="flex items-center justify-between w-full">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Live Customer QR Preview</span>
-                <span className="text-[10px] font-mono text-emerald-400">Scan-Ready</span>
+                <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400">Live Customer QR Preview</span>
+                <span className="text-[10px] font-bold text-[#0D5C3A] dark:text-emerald-400">Scan-Ready</span>
               </div>
               
-              <div className="p-3.5 bg-white rounded-2xl shadow-xl border-2 border-brand-500/30 inline-block">
+              <div className="p-3.5 bg-white rounded-2xl shadow-md border-2 border-[#0D5C3A]/20 inline-block">
                 {formData.qrCodeUrl ? (
                   <img
                     src={formData.qrCodeUrl}
@@ -708,15 +740,15 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
               </div>
 
               <div className="space-y-0.5 w-full">
-                <p className="text-xs font-bold text-white truncate">{formData.upiName || formData.name || "Restaurant"}</p>
-                <p className="text-[10px] text-slate-400">Scan with any UPI app to pay</p>
+                <p className="text-xs font-bold text-stone-900 dark:text-stone-100 truncate">{formData.upiName || formData.name || "Restaurant"}</p>
+                <p className="text-[10px] text-stone-500 dark:text-stone-400">Scan with any UPI app to pay</p>
               </div>
 
               <div className="w-full pt-1">
                 <button
                   type="button"
                   onClick={() => setShowStandeeModal(true)}
-                  className="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-brand-400 border border-slate-700 flex items-center justify-center gap-1.5 transition hover:border-brand-500/40"
+                  className="w-full py-2 rounded-xl bg-white dark:bg-stone-800 hover:bg-[#F3EFE7] text-xs font-bold text-[#0D5C3A] dark:text-emerald-400 border border-[#E2DDD3] dark:border-stone-700 flex items-center justify-center gap-1.5 transition shadow-2xs"
                 >
                   <Maximize2 className="w-3.5 h-3.5" />
                   <span>View Customer Standee & Print</span>
@@ -727,10 +759,10 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
         </div>
 
         {/* Bottom Save Action Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-[#151A21] border border-[#ECE7DF] dark:border-stone-800 shadow-sm">
           <div className="space-y-0.5 text-center sm:text-left">
-            <h4 className="text-sm font-bold text-white">Save All Profile & Payment Settings</h4>
-            <p className="text-xs text-slate-400">
+            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">Save All Profile & Payment Settings</h4>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
               All changes persist permanently in the database and synchronize live across all customer devices.
             </p>
           </div>
@@ -740,7 +772,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
               type="button"
               onClick={() => executeSave(formData)}
               disabled={saveStatus === 'saving' || !formData.name.trim()}
-              className="btn-primary text-xs py-3 px-6 flex items-center gap-2 shadow-glow"
+              className="px-6 py-3 rounded-xl bg-[#0D5C3A] hover:bg-[#09452b] text-white text-xs font-bold transition flex items-center gap-2 shadow-md shadow-[#0D5C3A]/20 disabled:opacity-50"
             >
               {saveStatus === 'saving' ? (
                 <>
@@ -765,24 +797,24 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
 
       {/* Fullscreen Customer Standee & Printable Billing QR Modal */}
       {showStandeeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-sm bg-slate-900 border border-brand-500/40 p-7 rounded-3xl shadow-2xl text-center space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#151A21] border border-[#E2DDD3] dark:border-stone-700 p-7 rounded-[2rem] shadow-2xl text-center space-y-5">
             <button
               onClick={() => setShowStandeeModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="absolute top-4 right-4 p-2 rounded-full text-stone-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="space-y-1">
-              <div className="inline-flex p-3 rounded-2xl bg-brand-500/10 border border-brand-500/30 text-brand-400 mb-1">
+              <div className="inline-flex p-3 rounded-2xl bg-[#0D5C3A]/10 border border-[#0D5C3A]/25 text-[#0D5C3A] dark:text-emerald-400 mb-1">
                 <Store className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-extrabold text-white">{formData.upiName || formData.name || "Restaurant"}</h2>
-              <p className="text-xs text-brand-400 font-semibold">Official Payment Standee</p>
+              <h2 className="text-xl font-serif font-extrabold text-stone-900 dark:text-stone-100">{formData.upiName || formData.name || "Restaurant"}</h2>
+              <p className="text-xs text-[#0D5C3A] dark:text-emerald-400 font-bold">Official Payment Standee</p>
             </div>
 
-            <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-brand-500/20 inline-block">
+            <div className="p-4 bg-white rounded-3xl shadow-lg border-4 border-[#0D5C3A]/20 inline-block">
               {formData.qrCodeUrl ? (
                 <img
                   src={formData.qrCodeUrl}
@@ -800,27 +832,27 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-slate-200">
+              <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
                 Scan with Any UPI App to Pay
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-stone-500 dark:text-stone-400 font-medium">
                 Google Pay • PhonePe • Paytm • BHIM • CRED
               </p>
             </div>
 
-            <div className="pt-2 border-t border-slate-800">
+            <div className="pt-2 border-t border-[#ECE7DF] dark:border-stone-800">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-xs font-bold text-slate-950 flex items-center justify-center gap-1.5 transition shadow-glow"
+                className="w-full py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-[#09452b] text-xs font-bold text-white flex items-center justify-center gap-1.5 transition shadow-sm"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Official Standee</span>
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 pt-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-stone-500 dark:text-stone-400 pt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#0D5C3A] dark:text-emerald-400" />
               <span>Official Merchant Gateway • Instant Verification</span>
             </div>
           </div>

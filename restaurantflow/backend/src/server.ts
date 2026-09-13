@@ -27,6 +27,15 @@ async function bootstrap(): Promise<void> {
     logger.info(`📖 Swagger API Docs: http://localhost:${PORT}/api/docs`);
     logger.info(`🌐 Frontend Target: ${env.FRONTEND_URL}`);
     logger.info('====================================================');
+
+    // Cloud Keep-Alive Heartbeat (prevents free-tier idle spin down)
+    const RENDER_HEALTH_URL = 'https://restaurantflow-backend.onrender.com/api/health';
+    // Initial ping
+    fetch(RENDER_HEALTH_URL).catch(() => {});
+    // Recurring ping every 5 minutes
+    setInterval(() => {
+      fetch(RENDER_HEALTH_URL).catch(() => {});
+    }, 5 * 60 * 1000);
   });
 
   // Graceful Shutdown

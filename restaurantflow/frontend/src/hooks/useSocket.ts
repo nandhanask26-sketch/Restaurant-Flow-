@@ -7,6 +7,21 @@ export function getSocketUrl(): string {
     return import.meta.env.VITE_SOCKET_URL;
   }
   if (typeof window !== 'undefined') {
+    const customServer = localStorage.getItem('rf_custom_server');
+    if (customServer) {
+      return customServer.replace(/\/$/, '');
+    }
+
+    const isCapacitor = 
+      !!(window as any).Capacitor?.isNativePlatform?.() || 
+      (window as any).Capacitor?.platform === 'android' ||
+      window.location.protocol === 'capacitor:' ||
+      (window.location.hostname === 'localhost' && window.location.port === '');
+
+    if (isCapacitor) {
+      return 'https://restaurantflow-backend.onrender.com';
+    }
+
     const hostname = window.location.hostname;
     if (hostname.includes('restaurantflow-frontend.onrender.com')) {
       return 'https://restaurantflow-backend.onrender.com';

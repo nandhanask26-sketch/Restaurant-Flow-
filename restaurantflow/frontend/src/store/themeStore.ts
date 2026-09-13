@@ -13,8 +13,8 @@ const getInitialTheme = (): Theme => {
   if (saved === 'dark' || saved === 'light') {
     return saved;
   }
-  // Default to dark theme for RestaurantFlow premium dark aesthetic
-  return 'dark';
+  // Default to light theme for authentic South Indian warm parchment aesthetic
+  return 'light';
 };
 
 const applyThemeToDOM = (theme: Theme) => {

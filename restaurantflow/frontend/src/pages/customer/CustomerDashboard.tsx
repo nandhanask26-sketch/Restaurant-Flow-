@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { 
-  Building2, 
-  MapPin, 
-  Phone, 
-  Mail, 
   Clock, 
   Calendar, 
-  Utensils, 
-  ArrowRight, 
+  MapPin, 
   CheckCircle2, 
-  AlertCircle, 
-  ShieldCheck, 
-  Sparkles, 
-  Store,
-  Compass
+  Leaf, 
+  ArrowRight, 
+  Utensils, 
+  Phone, 
+  Mail, 
+  Coffee,
+  Sparkles
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { Restaurant } from '../../types';
@@ -32,7 +29,7 @@ export const CustomerDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Live real-time clock ticker
+  // Real-time live clock ticker
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -40,14 +37,13 @@ export const CustomerDashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch restaurant details & active orders
+  // Fetch restaurant details
   useEffect(() => {
     let isMounted = true;
 
     async function loadData() {
       setLoading(true);
       try {
-        // 1. Fetch restaurant profile
         let targetId = restaurantId;
         if (!targetId) {
           const res = await apiClient.get('/restaurants');
@@ -115,184 +111,222 @@ export const CustomerDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-16">
+      <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-16">
         <LoadingSkeleton count={3} />
       </div>
     );
   }
 
+  const restaurantDisplayName = restaurant?.name || 'cvbnmAuthentic Mess & Cafe';
+  const openTimeDisplay = formatTime12h(restaurant?.openingTime || '07:00');
+  const closeTimeDisplay = formatTime12h(restaurant?.closingTime || '23:30');
+  const formattedDate = currentTime.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const formattedTime = currentTime.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
   return (
-    <div className="max-w-4xl mx-auto space-y-5 sm:space-y-7 animate-fade-in pb-20 px-2.5 sm:px-0 w-full max-w-full overflow-x-hidden">
-      {/* Restaurant Showcase Card */}
-      <div className="glass-card bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative w-full max-w-full">
-        {/* Cover Photo Banner */}
-        <div className="relative h-48 sm:h-80 w-full bg-slate-950 overflow-hidden">
-          <img
-            src={
-              restaurant?.imageUrl ||
-              'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop&q=80'
-            }
-            alt={restaurant?.name || 'Restaurant'}
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-          />
+    <div className="w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-fade-in pb-16 min-w-0">
+      {/* Top Split Hero Card Matching Screenshot */}
+      <div className="w-full bg-[#FAF7F0] dark:bg-[#151921] border border-[#EADBCC] dark:border-stone-800 rounded-3xl sm:rounded-[36px] shadow-[0_12px_45px_rgba(40,25,10,0.06)] overflow-hidden relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[480px] lg:min-h-[520px]">
+          
+          {/* Left Column: Traditional Flourishes, Restaurant Name, Verified Pill, Live Clock */}
+          <div className="lg:col-span-6 xl:col-span-6 p-6 sm:p-10 lg:p-12 xl:p-14 flex flex-col justify-between space-y-6 relative z-10">
+            
+            <div className="space-y-4">
+              {/* Cursive Tagline with Leaf */}
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 text-[#785435] dark:text-[#D4A373] font-['Caveat'] text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wide">
+                  <span>Traditional Taste</span>
+                  <Leaf className="w-6 h-6 text-[#16A34A] fill-[#16A34A]/25 -rotate-12" />
+                </div>
+                <div className="text-[#8C6B4E] dark:text-[#E2C799] font-['Caveat'] text-xl sm:text-2xl lg:text-3xl font-bold">
+                  for a Better Tomorrow
+                </div>
+              </div>
 
-          {/* Vignette & Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/30" />
+              {/* Bold Serif Restaurant Headline */}
+              <h1 className="font-serif font-black text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl text-[#143D2B] dark:text-[#E8F3ED] tracking-tight leading-[1.12] break-words">
+                {restaurantDisplayName}
+              </h1>
 
-          {/* Top Left: Live Open / Closed Status Pill */}
-          <div className="absolute top-3 left-3 sm:top-6 sm:left-6">
-            <div
-              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-black backdrop-blur-md border flex items-center gap-1.5 sm:gap-2 shadow-2xl ${
-                isOpen
-                  ? 'bg-emerald-950/85 text-emerald-300 border-emerald-500/50 shadow-emerald-950/50'
-                  : 'bg-rose-950/85 text-rose-300 border-rose-500/50 shadow-rose-950/50'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isOpen ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
-                }`}
-              />
-              <span className="tracking-wide">
-                {isOpen ? 'OPEN TODAY' : 'CLOSED TODAY'}
-              </span>
+              {/* Verified Restaurant Pill */}
+              <div className="pt-1">
+                <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0D5C3A] text-white text-xs font-bold shadow-sm">
+                  <CheckCircle2 className="w-4 h-4 fill-white text-[#0D5C3A]" />
+                  <span>Verified Restaurant</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-[#44403C] dark:text-stone-300 text-sm sm:text-base leading-relaxed font-medium pt-1 max-w-xl">
+                {restaurant?.description ||
+                  'Authentic South Indian Meals, Tiffin, Parotta, Dosa, Chaats and Fresh Juices crafted daily with fresh ingredients.'}
+              </p>
+            </div>
+
+            {/* Date & Live Ticking Clock */}
+            <div className="space-y-4 pt-2">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[#1C1917] dark:text-stone-200 text-xs sm:text-sm font-semibold">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#78716C] dark:text-stone-400" />
+                  <span>{formattedDate}</span>
+                </div>
+                <div className="flex items-center gap-2 font-mono">
+                  <Clock className="w-4 h-4 text-[#78716C] dark:text-stone-400" />
+                  <span>{formattedTime}</span>
+                </div>
+              </div>
+
+              {/* Bottom Cursive Quote */}
+              <div className="pt-1">
+                <span className="font-['Caveat'] text-[#8C5E3C] dark:text-[#E2C799] text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wide block">
+                  Good Food Brings People Together
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Hero Feast Image with Golden Dosa, Idlis on Banana Leaf & Filter Coffee */}
+          <div className="lg:col-span-6 xl:col-span-6 relative min-h-[340px] sm:min-h-[440px] lg:min-h-full overflow-hidden bg-stone-900 group">
+            <img
+              src="/images/south_indian_dosa_feast.jpg"
+              alt="Authentic South Indian Feast"
+              className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+            />
+
+            {/* Subtle Edge Vignette */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent lg:bg-gradient-to-r lg:from-[#FAF7F0] dark:lg:from-[#151921] lg:via-transparent lg:to-black/20 pointer-events-none opacity-90" />
+
+            {/* Floating Cursive Badge on Top Right */}
+            <div className="absolute top-6 right-5 sm:top-8 sm:right-8 bg-[#1C1917]/75 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/20 text-right shadow-xl">
+              <div className="flex items-center justify-end gap-1.5 text-amber-300 font-['Caveat'] text-2xl sm:text-3xl font-bold">
+                <Coffee className="w-5 h-5 text-amber-300" />
+                <span>South Indian</span>
+              </div>
+              <div className="font-['Caveat'] text-white text-xl sm:text-2xl font-bold -mt-1">
+                Goodness Everyday
+              </div>
             </div>
           </div>
 
-          {/* Top Right: Live Date & Time Clock */}
-          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-950/80 backdrop-blur-md border border-slate-800 text-xs text-slate-300 font-mono shadow-xl">
-            <Clock className="w-3.5 h-3.5 text-brand-400" />
-            <span>
-              {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </div>
+      </div>
+
+      {/* Bottom 3 Cards Row Matching Screenshot */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-stretch w-full">
+        
+        {/* Card 1: Operating Hours (col-span-1 md:col-span-4) */}
+        <div className="md:col-span-4 bg-[#FAF7F0] dark:bg-[#151921] border border-[#EADBCC] dark:border-stone-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition">
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#165834] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Clock className="w-6 h-6 sm:w-7 sm:h-7" />
+          </div>
+          <div className="space-y-1 min-w-0">
+            <span className="text-[11px] sm:text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider block">
+              Operating Hours
+            </span>
+            <span className="text-base sm:text-lg font-black text-[#1C1917] dark:text-stone-100 font-mono block">
+              {openTimeDisplay} - {closeTimeDisplay}
+            </span>
+            <div className="flex items-center gap-1.5 text-xs font-semibold">
+              <span className={`w-2.5 h-2.5 rounded-full ${isOpen ? 'bg-[#16A34A] animate-pulse' : 'bg-rose-500'}`} />
+              <span className={isOpen ? 'text-[#15803D] dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                {isOpen ? 'Currently Open & Serving' : 'Currently Closed'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Location & Address (col-span-1 md:col-span-5) */}
+        <div className="md:col-span-5 bg-[#FAF7F0] dark:bg-[#151921] border border-[#EADBCC] dark:border-stone-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition">
+          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#9A3412] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+            <MapPin className="w-6 h-6 sm:w-7 sm:h-7" />
+          </div>
+          <div className="space-y-1 min-w-0">
+            <span className="text-[11px] sm:text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider block">
+              Location & Address
+            </span>
+            <p className="text-xs sm:text-sm font-semibold text-[#1C1917] dark:text-stone-200 leading-snug line-clamp-2">
+              {restaurant?.address || '124 Gourmet Boulevard, Koramangala 4th Block, Bengaluru, Karnataka 560034'}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Brand Badge (col-span-1 md:col-span-3) */}
+        <div className="md:col-span-3 bg-[#FAF7F0] dark:bg-[#151921] border border-[#EADBCC] dark:border-stone-800 rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex items-center justify-center gap-3.5 shadow-sm hover:shadow-md transition">
+          <div className="w-12 h-12 rounded-full bg-[#EBF7EE] dark:bg-emerald-950/50 flex items-center justify-center flex-shrink-0">
+            <Leaf className="w-7 h-7 text-[#155E3D] fill-[#155E3D]/30 -rotate-12" />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="font-['Caveat'] text-[#8C5E3C] dark:text-[#E2C799] text-2xl sm:text-3xl font-bold leading-tight">
+              Good Food
+            </span>
+            <span className="font-['Caveat'] text-[#8C5E3C] dark:text-[#E2C799] text-2xl sm:text-3xl font-bold leading-none">
+              Happier Days
             </span>
           </div>
         </div>
 
-        {/* Restaurant Body Information */}
-        <div className="p-3.5 sm:p-8 relative -mt-10 sm:-mt-20 space-y-5 sm:space-y-6">
-          {/* Identity Header */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-3.5 sm:gap-5">
-            {/* Logo Badge */}
-            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-slate-900 border-4 border-slate-800 shadow-2xl overflow-hidden flex items-center justify-center text-white font-black text-2xl sm:text-4xl flex-shrink-0">
-              <div className="w-full h-full bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-inner">
-                {restaurant?.name ? restaurant.name.charAt(0) : 'R'}
-              </div>
-            </div>
+      </div>
 
-            {/* Name & Verification */}
-            <div className="text-center sm:text-left space-y-1 flex-1">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h1 className="text-xl sm:text-4xl font-extrabold text-white tracking-tight">
-                  {restaurant?.name || "Nalan's Mess"}
-                </h1>
-                <span className="badge-emerald text-[10px] sm:text-[11px] font-bold flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  Verified
-                </span>
-              </div>
-
-              <p className="text-xs sm:text-sm text-slate-400 font-medium flex items-center justify-center sm:justify-start gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-brand-400" />
-                <span>
-                  {currentTime.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
-              </p>
-            </div>
+      {/* Quick Action Navigation to Menu */}
+      <div className="bg-gradient-to-r from-[#143D2B] via-[#1A4F38] to-[#206346] rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-white flex flex-col sm:flex-row items-center justify-between gap-5 shadow-lg">
+        <div className="space-y-1 text-center sm:text-left">
+          <div className="flex items-center justify-center sm:justify-start gap-2">
+            <Sparkles className="w-5 h-5 text-amber-300" />
+            <h3 className="font-serif font-bold text-lg sm:text-2xl">Craving Fresh South Indian Delicacies?</h3>
           </div>
+          <p className="text-xs sm:text-sm text-emerald-100/90 font-sans max-w-xl">
+            Hot crispy dosas, steaming soft idlis, aromatic filter coffee, and traditional meals prepared live in our kitchen.
+          </p>
+        </div>
 
-          {/* Description Section */}
-          <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-              About Our Restaurant
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {restaurant?.description ||
-                'Authentic South Indian Meals, Tiffin, Parotta, Dosa, Chaats, and Fresh Juices crafted daily with fresh ingredients.'}
-            </p>
+        <Link
+          to="/customer/menu"
+          className="px-7 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-900 font-black text-sm flex items-center gap-2 shadow-md hover:shadow-xl transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
+        >
+          <Utensils className="w-4 h-4" />
+          <span>Order From Today's Menu</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Contact & Support Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF7F0] dark:bg-[#151921] border border-[#EADBCC] dark:border-stone-800 flex items-center gap-3.5 shadow-xs">
+          <div className="p-3 rounded-xl bg-white dark:bg-stone-800 text-[#9A3412] shadow-2xs">
+            <Phone className="w-5 h-5" />
           </div>
-
-          {/* Coordinate Details Grid: Timings, Location & Contact */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 1. Operating Timings */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex-shrink-0 mt-0.5">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                  Operating Hours
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-white font-mono block">
-                  {formatTime12h(restaurant?.openingTime || '08:00')} – {formatTime12h(restaurant?.closingTime || '22:00')}
-                </span>
-                <span className="text-[11px] text-slate-500 block">
-                  {isOpen ? 'Currently Open & Serving' : 'Currently Paused'}
-                </span>
-              </div>
-            </div>
-
-            {/* 2. Physical Location */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex-shrink-0 mt-0.5">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                  Location & Address
-                </span>
-                <span className="text-xs sm:text-sm font-semibold text-slate-200 block leading-snug">
-                  {restaurant?.address || '124 Gourmet Boulevard, City Center'}
-                </span>
-              </div>
-            </div>
-
-            {/* 3. Phone Contact */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex-shrink-0 mt-0.5">
-                <Phone className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                  Contact Number
-                </span>
-                <span className="text-xs sm:text-sm font-mono font-bold text-slate-200 block">
-                  {restaurant?.phone || '+91 98765 43210'}
-                </span>
-              </div>
-            </div>
-
-            {/* 4. Support Email */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start gap-3.5">
-              <div className="p-2.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex-shrink-0 mt-0.5">
-                <Mail className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                  Official Email
-                </span>
-                <span className="text-xs sm:text-sm font-mono font-semibold text-slate-200 block">
-                  {restaurant?.email || 'contact@nalansmess.com'}
-                </span>
-              </div>
-            </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 block tracking-wider">
+              Direct Contact
+            </span>
+            <span className="text-xs sm:text-sm font-mono font-bold text-[#1C1917] dark:text-stone-200">
+              {restaurant?.phone || '+91 98765 43210'}
+            </span>
           </div>
+        </div>
 
-          {/* Primary Action Banner */}
-          <div className="pt-2">
-            <Link
-              to="/customer/menu"
-              className="btn-primary w-full py-3.5 px-6 rounded-2xl text-sm font-extrabold flex items-center justify-center gap-2.5 shadow-xl shadow-brand-500/25 group transition-all hover:scale-[1.01]"
-            >
-              <Utensils className="w-4 h-4" />
-              <span>Browse Today's Fresh Menu</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+        <div className="p-4 sm:p-5 rounded-2xl bg-[#FAF7F0] dark:bg-[#151921] border border-[#EADBCC] dark:border-stone-800 flex items-center gap-3.5 shadow-xs">
+          <div className="p-3 rounded-xl bg-white dark:bg-stone-800 text-[#0D5C3A] shadow-2xs">
+            <Mail className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400 block tracking-wider">
+              Email Inquiries
+            </span>
+            <span className="text-xs sm:text-sm font-mono font-bold text-[#1C1917] dark:text-stone-200">
+              {restaurant?.email || 'contact@nalansmess.com'}
+            </span>
           </div>
         </div>
       </div>

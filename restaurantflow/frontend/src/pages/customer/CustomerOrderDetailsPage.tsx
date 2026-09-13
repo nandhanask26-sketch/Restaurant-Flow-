@@ -3,14 +3,18 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
   CheckCircle2, 
-  QrCode, 
   ShoppingBag, 
   Sparkles,
   ShieldCheck,
-  CreditCard,
   Banknote,
   AlertCircle,
-  XCircle
+  XCircle,
+  Printer,
+  ChefHat,
+  Copy,
+  Check,
+  Utensils,
+  Clock
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiClient } from '../../api/client';
@@ -23,6 +27,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedToken, setCopiedToken] = useState(false);
 
   const { on, off } = useSocket();
 
@@ -59,20 +64,30 @@ export const CustomerOrderDetailsPage: React.FC = () => {
     };
   }, [id, on, off]);
 
+  const handleCopyToken = () => {
+    if (!order?.orderToken) return;
+    navigator.clipboard.writeText(order.orderToken);
+    setCopiedToken(true);
+    setTimeout(() => setCopiedToken(false), 2000);
+  };
+
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto py-8 space-y-4">
-        <LoadingSkeleton className="h-96 w-full rounded-2xl" />
+      <div className="max-w-xl mx-auto py-10 space-y-4">
+        <LoadingSkeleton className="h-[480px] w-full rounded-3xl" />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4">
-        <h2 className="text-xl font-bold text-slate-100">Order Not Found</h2>
-        <p className="text-xs text-slate-400">The requested order pass does not exist.</p>
-        <Link to="/customer/orders" className="btn-primary inline-flex text-xs px-4 py-2">
+      <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500 mx-auto">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">Order Pass Not Found</h2>
+        <p className="text-xs text-stone-500 dark:text-stone-400">The requested order pass does not exist or may have expired.</p>
+        <Link to="/customer/orders" className="btn-primary inline-flex text-xs px-5 py-2.5">
           View My Orders
         </Link>
       </div>
@@ -85,191 +100,341 @@ export const CustomerOrderDetailsPage: React.FC = () => {
   const isRedeemed = order.status === 'DELIVERED' || order.qrCode?.isScanned;
   const verificationCode = order.qrCode?.verificationCode || `VERIFY-${order.id.substring(0, 8).toUpperCase()}`;
 
-  return (
-    <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6 animate-fade-in pb-16 px-2.5 sm:px-4 w-full max-w-full overflow-x-hidden">
-      {/* Back navigation */}
-      <Link
-        to="/customer/orders"
-        className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-400 transition"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to My Orders
-      </Link>
+  // Operational status info
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'READY':
+        return {
+          label: 'Ready for Pickup!',
+          badgeClass: 'bg-emerald-500/15 text-[#0D5C3A] dark:text-emerald-400 border-emerald-500/30',
+          dotClass: 'bg-emerald-500 animate-ping',
+          description: 'Your food is ready at the counter! Please show your pass now.',
+        };
+      case 'PREPARING':
+        return {
+          label: 'Preparing in Kitchen',
+          badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+          dotClass: 'bg-amber-500 animate-pulse',
+          description: 'Chef is preparing your meal with authentic fresh ingredients.',
+        };
+      case 'DELIVERED':
+        return {
+          label: 'Collected & Completed',
+          badgeClass: 'bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-500/30',
+          dotClass: 'bg-stone-400',
+          description: 'Order successfully delivered and verified at the counter.',
+        };
+      case 'CANCELLED':
+        return {
+          label: 'Order Cancelled',
+          badgeClass: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30',
+          dotClass: 'bg-rose-500',
+          description: 'This order was cancelled.',
+        };
+      default:
+        return {
+          label: 'In Kitchen Queue',
+          badgeClass: 'bg-[#0D5C3A]/10 text-[#0D5C3A] dark:text-emerald-400 border-[#0D5C3A]/25',
+          dotClass: 'bg-[#0D5C3A] animate-pulse',
+          description: 'Order confirmed and waiting in the priority kitchen queue.',
+        };
+    }
+  };
 
-      {/* If UPI payment was REJECTED / FAILED: STRICT RULE: DO NOT DISPLAY ANY QR CODE! */}
+  const statusInfo = getStatusInfo(order.status);
+  const formattedDate = order.createdAt
+    ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '';
+
+  return (
+    <div className="max-w-xl mx-auto space-y-6 animate-fade-in pb-20 px-3 sm:px-4 w-full">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between gap-3 pt-2 print:hidden">
+        <Link
+          to="/customer/orders"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#151A21] border border-[#E8DFD1] dark:border-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:text-[#0D5C3A] transition shadow-2xs"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>My Orders</span>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#151A21] border border-[#E8DFD1] dark:border-stone-800 text-xs font-bold text-stone-800 dark:text-stone-200 hover:text-[#0D5C3A] transition shadow-2xs"
+        >
+          <Printer className="w-3.5 h-3.5 text-[#0D5C3A] dark:text-emerald-400" />
+          <span>Print Pass</span>
+        </button>
+      </div>
+
+      {/* If UPI payment was REJECTED / DECLINED */}
       {isUpiRejected ? (
-        <div className="glass-card p-5 sm:p-8 bg-slate-900 border-2 border-rose-500/40 rounded-3xl shadow-2xl space-y-5 text-center w-full max-w-full overflow-hidden">
-          <div className="w-16 h-16 rounded-3xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto shadow-inner">
+        <div className="bg-white dark:bg-[#151A21] border-2 border-rose-500/30 rounded-[2rem] shadow-xl p-6 sm:p-8 space-y-5 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-500 mx-auto">
             <XCircle className="w-9 h-9" />
           </div>
 
-          <div className="space-y-2">
-            <span className="text-xs font-black uppercase tracking-wider text-rose-400 bg-rose-500/10 px-3.5 py-1 rounded-full border border-rose-500/25">
-              UPI Payment Rejected / Declined
+          <div className="space-y-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
+              UPI Payment Incomplete
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white pt-1">
-              No Pickup QR Pass Generated
+            <h2 className="text-2xl font-serif font-extrabold text-stone-900 dark:text-stone-100 pt-1">
+              No Pickup Pass Generated
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
-              Your UPI payment was rejected, cancelled, or not authorized. The cafeteria kitchen will not prepare this meal without verified payment.
+            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 max-w-sm mx-auto leading-relaxed">
+              Your UPI payment was not completed or authorization timed out. To receive hot meals at the counter, please place your order with verified payment or Cash on Delivery.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-rose-950/60 border border-rose-500/30 text-xs text-rose-200 max-w-md mx-auto space-y-1 text-left">
-            <div className="flex items-center gap-2 font-bold text-rose-300">
+          <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#0E1217] border border-[#E8DFD1] dark:border-stone-800 text-xs text-stone-700 dark:text-stone-300 max-w-md mx-auto space-y-1 text-left">
+            <div className="flex items-center gap-2 font-bold text-rose-600 dark:text-rose-400">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>Token #{order.orderToken} Status: Payment Incomplete</span>
+              <span>Token #{order.orderToken} Status: Payment Pending</span>
             </div>
-            <p className="text-[11px] text-slate-400 pl-6 leading-relaxed">
-              Only customers who complete UPI payment correctly receive an authoritative pickup QR pass to show to the cafeteria manager.
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 pl-6 leading-relaxed">
+              Only verified orders receive an authoritative, scannable QR pass recognized by cafeteria kitchen counters.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="pt-2">
             <Link
               to="/customer/menu"
-              className="btn-primary w-full sm:w-auto text-xs px-6 py-3.5 font-bold shadow-glow"
+              className="btn-primary w-full sm:w-auto text-xs px-6 py-3 font-bold"
             >
-              Back to Menu & Re-order
+              Back to Menu & Order Again
             </Link>
           </div>
         </div>
       ) : (
-        /* Main Card: Token Number & Generated Pickup QR (ONLY for correctly PAID orders or Cash on Delivery) */
-        <div className="glass-card p-4 sm:p-6 bg-slate-900 border-2 border-brand-500/30 rounded-3xl shadow-2xl space-y-5 sm:space-y-6 text-center w-full max-w-full overflow-hidden">
-          {/* Token Number Highlight */}
-          <div className="pb-4 border-b border-slate-800 space-y-1">
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-brand-400">
-              <Sparkles className="w-3.5 h-3.5" />
-              Cafeteria Pickup Token Number
-            </span>
-            <div className="text-4xl sm:text-5xl font-mono font-black text-brand-400 tracking-tight my-2">
-              {order.orderToken}
+        /* The Professional Digital Dining Pass (Ticket Design) */
+        <div className="bg-white dark:bg-[#151A21] border border-[#E8DFD1] dark:border-stone-800 rounded-[2.2rem] shadow-xl overflow-hidden relative transition-colors">
+          {/* Top Brand & Status Section */}
+          <div className="p-6 sm:p-7 bg-gradient-to-b from-[#FDFBF7] to-white dark:from-[#1A222D] dark:to-[#151A21] border-b border-[#ECE5D8] dark:border-stone-800/80">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#0D5C3A] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                  N
+                </div>
+                <div>
+                  <h3 className="font-serif font-extrabold text-stone-900 dark:text-stone-100 text-base sm:text-lg leading-tight">
+                    Nalan's Mess
+                  </h3>
+                  <span className="text-[11px] font-bold text-[#78716C] dark:text-stone-400 uppercase tracking-widest block">
+                    Digital Dining Pass
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Status Badge */}
+              <div className={`px-3.5 py-1.5 rounded-full border text-xs font-bold flex items-center gap-2 ${statusInfo.badgeClass}`}>
+                <span className={`w-2 h-2 rounded-full ${statusInfo.dotClass}`} />
+                <span>{statusInfo.label}</span>
+              </div>
             </div>
-            <p className="text-xs text-slate-400">
-              Show this token number and QR code at the counter to collect your food
-            </p>
+
+            {/* Token Highlight Hero */}
+            <div className="mt-7 text-center space-y-2">
+              <span className="text-[11px] font-bold tracking-widest text-[#78716C] dark:text-stone-400 uppercase inline-flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Pickup Token Number
+              </span>
+
+              <div className="flex items-center justify-center gap-2">
+                <div className="px-6 py-2.5 bg-[#EBF7EE] dark:bg-emerald-950/50 border-2 border-[#0D5C3A]/25 dark:border-emerald-500/30 rounded-2xl shadow-inner inline-flex items-center gap-3">
+                  <span className="text-4xl sm:text-5xl font-mono font-black text-[#0D5C3A] dark:text-emerald-400 tracking-wider">
+                    #{order.orderToken}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyToken}
+                    title="Copy token number"
+                    className="p-1.5 rounded-lg text-[#0D5C3A] dark:text-emerald-400 hover:bg-[#0D5C3A]/10 transition"
+                  >
+                    {copiedToken ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 opacity-70" />}
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-xs text-stone-500 dark:text-stone-400 pt-1 max-w-sm mx-auto">
+                Show this token number and QR code at the counter to collect your food
+              </p>
+            </div>
           </div>
 
-          {/* Uniquely Generated Pickup QR Code with Prominent Token Number */}
-          <div className="flex flex-col items-center max-w-full">
-            <div className="relative p-3.5 sm:p-5 bg-white rounded-3xl inline-flex flex-col items-center shadow-2xl border-4 border-brand-500/40 mb-3 max-w-full">
-              {/* Top QR Token Badge */}
-              <div className="mb-2.5 px-3 py-1 bg-slate-900 text-brand-400 rounded-full text-xs font-mono font-black border border-slate-700 shadow-sm flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
+          {/* QR Code Presentation Inset */}
+          <div className="p-6 sm:p-7 flex flex-col items-center justify-center text-center">
+            <div className="relative p-4 sm:p-5 bg-white rounded-2xl shadow-md border-2 border-[#0D5C3A]/20 dark:border-emerald-500/30 inline-block">
+              {/* Top Token badge on QR */}
+              <div className="mb-2 px-3 py-1 bg-[#FAF8F5] text-[#0D5C3A] rounded-full text-[11px] font-mono font-black border border-[#E2DDD3] shadow-2xs flex items-center justify-center gap-1.5 mx-auto">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0D5C3A] animate-pulse" />
                 <span>TOKEN #{order.orderToken}</span>
               </div>
 
               <QRCodeSVG
                 value={verificationCode}
-                size={175}
+                size={180}
                 level="H"
                 includeMargin={false}
-                className={isRedeemed ? 'opacity-15 grayscale' : ''}
+                className={isRedeemed ? 'opacity-20 grayscale' : ''}
               />
 
-              {/* Bottom QR Verification / Scan Caption */}
-              <div className="mt-2.5 text-center">
-                <span className="text-[11px] font-mono font-bold text-slate-800 tracking-wide block">
+              <div className="mt-2.5 text-center space-y-0.5">
+                <span className="text-xs font-mono font-black text-stone-900 tracking-wider block">
                   {order.orderToken}
                 </span>
-                <span className="text-[9px] font-mono text-slate-500 block uppercase">
+                <span className="text-[10px] font-mono text-stone-500 block uppercase">
                   {verificationCode}
                 </span>
               </div>
 
-              {/* Overlay Stamp when Scanned & Used */}
+              {/* Redeemed Stamp Overlay */}
               {isRedeemed && (
-                <div className="absolute inset-0 m-2 rounded-2xl bg-slate-950/92 backdrop-blur-[2px] flex flex-col items-center justify-center p-3 text-center border border-emerald-500/50 shadow-inner animate-fade-in">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 mb-2">
+                <div className="absolute inset-0 m-2 rounded-xl bg-white/95 dark:bg-stone-950/95 backdrop-blur-2xs flex flex-col items-center justify-center p-3 text-center border-2 border-emerald-600 shadow-lg animate-fade-in">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-500 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-1.5">
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <span className="text-sm font-black text-emerald-300 uppercase tracking-widest">
-                    USED & REDEEMED
+                  <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+                    COLLECTED & REDEEMED
                   </span>
-                  <span className="text-xs text-slate-200 font-bold mt-0.5">
+                  <span className="text-[11px] text-stone-600 dark:text-stone-300 font-bold">
                     Food Supplied at Counter
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono mt-1">
-                    {order.deliveredAt ? new Date(order.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Redeemed'}
+                  <span className="text-[10px] text-stone-400 font-mono mt-0.5">
+                    {order.deliveredAt ? new Date(order.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Verified'}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Payment & Security Status */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-1 text-xs">
+            {/* Payment & Security Badges */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs">
               {isPaid ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 text-[#0D5C3A] dark:text-emerald-400 border border-emerald-500/25 font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   PAID via UPI (₹{order.totalAmount.toFixed(0)}){order.payment?.transactionId ? ` • Ref: ${order.payment.transactionId}` : ''}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-bold">
                   <Banknote className="w-3.5 h-3.5" />
                   Cash on Delivery — Pay ₹{order.totalAmount.toFixed(0)} at Counter
                 </span>
               )}
 
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-950 text-slate-400 border border-slate-800">
-                <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FAF8F5] dark:bg-[#0E1217] text-stone-600 dark:text-stone-400 border border-[#E2DDD3] dark:border-stone-700 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#0D5C3A] dark:text-emerald-400" />
                 Single-use pass (Scanned once)
+              </span>
+            </div>
+          </div>
+
+          {/* Ticket Perforation Notch & Dashed Line */}
+          <div className="relative my-1">
+            <div className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-[#FAF8F5] dark:bg-[#0E1217] rounded-full border-r border-[#E8DFD1] dark:border-stone-800 shadow-inner" />
+            <div className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-[#FAF8F5] dark:bg-[#0E1217] rounded-full border-l border-[#E8DFD1] dark:border-stone-800 shadow-inner" />
+            <div className="border-t-2 border-dashed border-[#E2DDD3] dark:border-stone-700 mx-5" />
+          </div>
+
+          {/* Lower Stub: Receipt & Food Items Breakdown */}
+          <div className="p-6 sm:p-7 bg-[#FAF8F5] dark:bg-[#12161E] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#E8DFD1] dark:border-stone-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-[#0D5C3A] dark:text-emerald-400" />
+                Ordered Food Items Bill
+              </span>
+              <span className="text-xs font-mono font-bold text-[#0D5C3A] dark:text-emerald-400">
+                #{order.orderToken}
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {order.items?.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between text-xs sm:text-sm py-1 border-b border-[#EDE7DC] dark:border-stone-800/60 last:border-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-stone-900 dark:text-stone-100">
+                      {item.foodName}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-stone-200/60 dark:bg-stone-800 text-[11px] font-bold text-stone-700 dark:text-stone-300 font-mono">
+                      × {item.quantity}
+                    </span>
+                  </div>
+                  <span className="font-mono font-bold text-stone-900 dark:text-stone-100">
+                    ₹{item.totalPrice.toFixed(0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Total Summary */}
+            <div className="pt-3 border-t border-[#E8DFD1] dark:border-stone-800 space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+                <span>Items Subtotal</span>
+                <span className="font-mono font-semibold text-stone-700 dark:text-stone-300">₹{order.totalAmount.toFixed(0)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+                <span>Kitchen Charges & Packaging</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">FREE / Included</span>
+              </div>
+              <div className="pt-2 border-t border-[#E8DFD1] dark:border-stone-800 flex items-center justify-between">
+                <span className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                  Total Amount:
+                </span>
+                <span className="text-2xl font-mono font-black text-[#0D5C3A] dark:text-emerald-400">
+                  ₹{order.totalAmount.toFixed(0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Order Timestamps & Ref */}
+            <div className="pt-2 border-t border-[#EDE7DC] dark:border-stone-800/60 flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Placed at {formattedDate}</span>
+              </span>
+              <span className="font-mono text-[10px]">
+                ID: {order.id.substring(0, 8)}
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Ordered Food Items Bill */}
-      <div className="p-5 bg-slate-900 rounded-3xl border border-slate-800 text-left space-y-3 shadow-xl">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <ShoppingBag className="w-4 h-4 text-brand-400" />
-            Ordered Food Items Bill
-          </span>
-          <span className="text-xs font-mono font-bold text-brand-400">
-            #{order.orderToken}
-          </span>
+      {/* Counter Instructions Box */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#151A21] border border-[#E8DFD1] dark:border-stone-800 flex items-start gap-3.5 shadow-2xs">
+        <div className="p-2.5 rounded-xl bg-[#0D5C3A]/10 text-[#0D5C3A] dark:text-emerald-400 flex-shrink-0">
+          <ChefHat className="w-5 h-5" />
         </div>
-
-        <div className="space-y-2">
-          {order.items?.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between text-xs py-1 text-slate-200 border-b border-slate-800/50 last:border-0"
-            >
-              <span className="font-semibold">
-                {item.foodName} <strong className="text-brand-400 ml-1">× {item.quantity}</strong>
-              </span>
-              <span className="font-mono font-bold text-slate-100">
-                ₹{item.totalPrice.toFixed(0)}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-          <span className="text-xs text-slate-400">Total Amount:</span>
-          <span className="text-xl font-mono font-black text-brand-400">
-            ₹{order.totalAmount.toFixed(0)}
-          </span>
+        <div className="text-xs text-stone-600 dark:text-stone-300 space-y-1">
+          <h4 className="font-bold text-stone-900 dark:text-stone-100">
+            Counter Pickup Instructions
+          </h4>
+          <p className="leading-relaxed">
+            Please wait for token <strong className="font-mono font-bold text-[#0D5C3A] dark:text-emerald-400">#{order.orderToken}</strong> to be announced at the counter. The staff will scan your QR code to deliver your meal.
+          </p>
         </div>
       </div>
 
-      {/* Counter Instructions */}
-      <div className="text-center text-xs text-slate-400 pt-1">
-        {isRedeemed ? (
-          <p className="text-emerald-400 font-semibold">
-            ✅ Food has been collected. This QR pass is expired and cannot be reused.
-          </p>
-        ) : isUpiRejected ? (
-          <p className="text-rose-400 font-semibold">
-            ⚠️ This order is unpaid. The counter will not release food without verified payment.
-          </p>
-        ) : (
-          <p>
-            Please wait for token <strong className="text-brand-400 font-mono">#{order.orderToken}</strong> to be announced at the counter. The staff will scan your QR code to deliver your meal.
-          </p>
-        )}
+      {/* Bottom Action Buttons */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1 print:hidden">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white dark:bg-[#151A21] hover:bg-stone-50 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border border-[#DDD0C0] dark:border-stone-700 text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs"
+        >
+          <Printer className="w-4 h-4 text-[#0D5C3A] dark:text-emerald-400" />
+          <span>Print Official Pass</span>
+        </button>
+
+        <Link
+          to="/customer/menu"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0D5C3A] hover:bg-[#09452b] text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-[#0D5C3A]/25"
+        >
+          <Utensils className="w-4 h-4" />
+          <span>Order More Items</span>
+        </Link>
       </div>
     </div>
   );

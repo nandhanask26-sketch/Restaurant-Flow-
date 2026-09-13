@@ -45,7 +45,7 @@ export const MobileBottomNav: React.FC = () => {
   const links = isManager ? managerLinks : customerLinks;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] shadow-2xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-[#FBF7EE]/95 dark:bg-[#151921]/95 backdrop-blur-xl border-t border-[#E8DFD1] dark:border-stone-800 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] shadow-lg">
       <div className="grid grid-flow-col auto-cols-fr items-center gap-1 max-w-lg mx-auto">
         {links.map((link) => {
           const Icon = link.icon;
@@ -56,15 +56,15 @@ export const MobileBottomNav: React.FC = () => {
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-200 relative ${
                   isActive
-                    ? 'text-brand-400 bg-brand-500/10 font-bold scale-105'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 font-medium'
+                    ? 'text-[#0D5C3A] dark:text-emerald-400 bg-[#0D5C3A]/10 font-bold scale-105'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 hover:bg-stone-200/50 dark:hover:bg-stone-800/60 font-medium'
                 }`
               }
             >
               <div className="relative">
                 <Icon className="w-5 h-5" />
                 {Boolean(link.badge && link.badge > 0) && (
-                  <span className="absolute -top-1.5 -right-2 bg-brand-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-glow animate-pulse">
+                  <span className="absolute -top-1.5 -right-2 bg-[#EA580C] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
                     {link.badge}
                   </span>
                 )}
