@@ -3,7 +3,7 @@
 	"appName": "RestaurantFlow",
 	"webDir": "dist",
 	"server": {
-		"cleartext": true,
-		"androidScheme": "http"
+		"url": "https://restaurantflow-frontend.onrender.com",
+		"cleartext": true
 	}
 }
