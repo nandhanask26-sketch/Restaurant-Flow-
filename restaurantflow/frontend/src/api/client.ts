@@ -11,42 +11,34 @@ export function getApiBaseUrl(): string {
       return `${customServer.replace(/\/$/, '')}/api`;
     }
 
-    // Check if running inside Capacitor native Android container
-    const isCapacitor = 
-      !!(window as any).Capacitor?.isNativePlatform?.() || 
-      (window as any).Capacitor?.platform === 'android' ||
-      window.location.protocol === 'capacitor:' ||
-      (window.location.hostname === 'localhost' && window.location.port === '');
-
-    if (isCapacitor) {
-      // In native Android APK on phone, connect directly to global high-speed Cloud backend
-      // Works from anywhere in the world on 4G/5G mobile data or any Wi-Fi
-      return 'https://restaurantflow-backend.onrender.com/api';
+    // Only local Vite development server proxies /api to localhost:5000
+    if (window.location.hostname === 'localhost' && window.location.port === '5173') {
+      return '/api';
     }
 
-    const hostname = window.location.hostname;
-    // Render static site targeting Render backend
-    if (hostname.includes('restaurantflow-frontend.onrender.com')) {
-      return 'https://restaurantflow-backend.onrender.com/api';
+    // Check if running inside local network IP dev
+    if (window.location.hostname === '10.18.101.206' && window.location.port === '5173') {
+      return '/api';
     }
-    if (hostname.includes('onrender.com')) {
-      const backendHost = hostname.replace('-frontend', '-backend');
-      return `https://${backendHost}/api`;
-    }
+
+    // In all other environments (Mobile APK, Android WebView, Capacitor, Render Web, external browser):
+    // Always connect directly to the global Cloud backend
+    return 'https://restaurantflow-backend.onrender.com/api';
   }
-  return '/api';
+  return 'https://restaurantflow-backend.onrender.com/api';
 }
 
 export const apiClient = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 15000,
+  timeout: 45000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request Interceptor: Attach Access Token
+// Request Interceptor: Attach Access Token and ensure fresh baseURL
 apiClient.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   const token = localStorage.getItem('rf_access_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;

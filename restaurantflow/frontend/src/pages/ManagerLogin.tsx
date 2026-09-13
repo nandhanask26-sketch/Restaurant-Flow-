@@ -14,7 +14,7 @@ import {
   Wifi,
   RefreshCw 
 } from 'lucide-react';
-import { apiClient } from '../api/client';
+import { apiClient, getApiBaseUrl } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
 export const ManagerLogin: React.FC = () => {
@@ -50,8 +50,14 @@ export const ManagerLogin: React.FC = () => {
     setLoading(true);
     setError(null);
 
+    const cleanEmail = email.trim();
+    const cleanPassword = password;
+
     try {
-      const { data } = await apiClient.post('/auth/login', { email, password });
+      const { data } = await apiClient.post('/auth/login', { 
+        email: cleanEmail, 
+        password: cleanPassword 
+      });
       const { user, accessToken, refreshToken, restaurantId } = data.data;
 
       if (user.role !== 'RESTAURANT_MANAGER' && user.role !== 'ADMIN') {
@@ -62,10 +68,15 @@ export const ManagerLogin: React.FC = () => {
       setAuth(user, accessToken, refreshToken, restaurantId);
       navigate('/manager/dashboard');
     } catch (err: any) {
-      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        setError('Connection timed out. The server may still be waking up. Please tap "Sign In" again.');
+      console.error('Manager login failed:', err);
+      const serverMsg = err.response?.data?.message;
+      if (serverMsg) {
+        setError(serverMsg);
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('The cloud server was sleeping and timed out waking up. Please tap "Sign In as Manager" again now!');
       } else {
-        setError(err.response?.data?.message || 'Login failed. Please check your credentials or server connection.');
+        const netMsg = err.message || (err.code ? `Error: ${err.code}` : 'Network Error');
+        setError(`Unable to reach cloud server (${netMsg}). Target: ${getApiBaseUrl()}`);
       }
     } finally {
       setLoading(false);
