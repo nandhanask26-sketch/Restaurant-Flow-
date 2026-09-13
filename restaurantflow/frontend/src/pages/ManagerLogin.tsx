@@ -54,11 +54,21 @@ export const ManagerLogin: React.FC = () => {
     const cleanPassword = password;
 
     try {
-      const { data } = await apiClient.post('/auth/login', { 
+      const response = await apiClient.post('/auth/login', { 
         email: cleanEmail, 
         password: cleanPassword 
       });
-      const { user, accessToken, refreshToken, restaurantId } = data.data;
+
+      // Handle both wrapped { data: { user... } } and unwrapped { user... } response formats
+      const payload = response.data?.data || response.data;
+      const user = payload?.user;
+      const accessToken = payload?.accessToken;
+      const refreshToken = payload?.refreshToken;
+      const restaurantId = payload?.restaurantId;
+
+      if (!user) {
+        throw new Error('User profile data missing in server response.');
+      }
 
       if (user.role !== 'RESTAURANT_MANAGER' && user.role !== 'ADMIN') {
         setError('This portal is strictly for authorized restaurant managers.');
