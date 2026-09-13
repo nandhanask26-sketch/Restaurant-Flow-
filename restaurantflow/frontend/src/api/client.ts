@@ -2,9 +2,6 @@ import axios from 'axios';
 
 // Smart API Base URL resolver: adapts to Render Cloud, Custom Domain, or Local Dev
 export function getApiBaseUrl(): string {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
   if (typeof window !== 'undefined') {
     const customServer = localStorage.getItem('rf_custom_server');
     if (customServer) {
@@ -20,11 +17,14 @@ export function getApiBaseUrl(): string {
     if (window.location.hostname === '10.18.101.206' && window.location.port === '5173') {
       return '/api';
     }
-
-    // In all other environments (Mobile APK, Android WebView, Capacitor, Render Web, external browser):
-    // Always connect directly to the global Cloud backend
-    return 'https://restaurantflow-backend.onrender.com/api';
   }
+
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
+    return envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/$/, '')}/api`;
+  }
+
+  // Always use the complete canonical cloud backend URL
   return 'https://restaurantflow-backend.onrender.com/api';
 }
 

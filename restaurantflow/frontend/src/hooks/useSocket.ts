@@ -3,36 +3,23 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
 export function getSocketUrl(): string {
-  if (import.meta.env.VITE_SOCKET_URL) {
-    return import.meta.env.VITE_SOCKET_URL;
-  }
   if (typeof window !== 'undefined') {
     const customServer = localStorage.getItem('rf_custom_server');
     if (customServer) {
       return customServer.replace(/\/$/, '');
     }
 
-    const isCapacitor = 
-      !!(window as any).Capacitor?.isNativePlatform?.() || 
-      (window as any).Capacitor?.platform === 'android' ||
-      window.location.protocol === 'capacitor:' ||
-      (window.location.hostname === 'localhost' && window.location.port === '');
-
-    if (isCapacitor) {
-      return 'https://restaurantflow-backend.onrender.com';
+    if (window.location.hostname === 'localhost' && window.location.port === '5173') {
+      return window.location.origin;
     }
-
-    const hostname = window.location.hostname;
-    if (hostname.includes('restaurantflow-frontend.onrender.com')) {
-      return 'https://restaurantflow-backend.onrender.com';
-    }
-    if (hostname.includes('onrender.com')) {
-      const backendHost = hostname.replace('-frontend', '-backend');
-      return `https://${backendHost}`;
-    }
-    return window.location.origin;
   }
-  return '';
+
+  const envUrl = import.meta.env.VITE_SOCKET_URL;
+  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
+    return envUrl.replace(/\/$/, '');
+  }
+
+  return 'https://restaurantflow-backend.onrender.com';
 }
 
 export function useSocket(restaurantId?: string | null) {
