@@ -4,6 +4,7 @@ import { env } from './config/env';
 import { testConnection, closePool } from './config/database';
 import { initSocketServer } from './websocket/socketServer';
 import { logger } from './utils/logger';
+import { ensureInitialData } from './utils/initDatabase';
 
 async function bootstrap(): Promise<void> {
   const app = createApp();
@@ -16,6 +17,9 @@ async function bootstrap(): Promise<void> {
   const isDbConnected = await testConnection();
   if (!isDbConnected) {
     logger.warn('⚠️ Warning: PostgreSQL database is not currently reachable. Please ensure PostgreSQL is running.');
+  } else {
+    // Ensure manager credentials and restaurant assignment exist
+    await ensureInitialData();
   }
 
   // Start HTTP Server

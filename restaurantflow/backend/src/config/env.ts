@@ -42,7 +42,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_SECURE: z.string().optional().default('false'),
-  EMAIL_FROM: z.string().optional().default('login@restaurantflow.com'),
+  EMAIL_FROM: z.string().optional().default('"Nalan\'s Mess" <Nalan\'smess@gmail.com>'),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

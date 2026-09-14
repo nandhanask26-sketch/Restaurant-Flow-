@@ -10,13 +10,33 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   const { isAuthenticated, user } = useAuthStore();
 
+  const isManagerRoute = allowedRoles?.some(
+    (r) => r === 'RESTAURANT_MANAGER' || r === 'MANAGER'
+  );
+
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={isManagerRoute ? '/manager/login' : '/login'} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // If manager tries to access customer route or vice versa
-    if (user.role === 'RESTAURANT_MANAGER') {
+  const isUserRoleAllowed = allowedRoles?.some((role) => {
+    if (role === user.role) return true;
+    if (
+      (role === 'RESTAURANT_MANAGER' || role === 'MANAGER') &&
+      (user.role === 'RESTAURANT_MANAGER' || user.role === 'MANAGER')
+    ) {
+      return true;
+    }
+    return false;
+  });
+
+  if (allowedRoles && !isUserRoleAllowed) {
+    // If customer tries to open manager pages or vice versa
+    const isUserManager =
+      user.role === 'RESTAURANT_MANAGER' ||
+      user.role === 'MANAGER' ||
+      user.role === 'ADMIN';
+
+    if (isUserManager) {
       return <Navigate to="/manager/dashboard" replace />;
     }
     return <Navigate to="/customer/dashboard" replace />;

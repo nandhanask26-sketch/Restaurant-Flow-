@@ -16,8 +16,8 @@ import { apiClient, getApiBaseUrl } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
 export const ManagerLogin: React.FC = () => {
-  const [email, setEmail] = useState('manager@example.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loginElapsed, setLoginElapsed] = useState(0);
@@ -141,7 +141,8 @@ export const ManagerLogin: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="manager@example.com"
+                placeholder="Nalan'smess@gmail.com"
+                autoComplete="username"
                 className="glass-input pl-10 text-sm"
               />
             </div>

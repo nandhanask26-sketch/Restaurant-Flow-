@@ -82,9 +82,9 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </head>
         <body>
           <div class="card">
-            <div class="logo">🍴 Restaurant<span class="brand-highlight">Flow</span> Smart Ordering</div>
+            <div class="logo">🍴 Nalan's <span class="brand-highlight">Mess</span> • Smart Ordering</div>
             <div class="title">🔐 Your One-Time Login Verification Code</div>
-            <p class="desc">Hello <strong>${fullName || 'Customer'}</strong>,<br/>Welcome back to RestaurantFlow! Use the 6-digit verification code below to sign in securely to your account:</p>
+            <p class="desc">Hello <strong>${fullName || 'Customer'}</strong>,<br/>Welcome back to Nalan's Mess! Use the 6-digit verification code below to sign in securely to your account:</p>
             <div class="code-box">
               <div style="font-size: 11px; color: #94A3B8; text-transform: uppercase; font-weight: 700; margin-bottom: 6px;">Your 6-Digit Verification Code</div>
               <div class="code">${otp}</div>
@@ -92,22 +92,22 @@ export class NodemailerEmailProvider implements IEmailProvider {
             </div>
             <p class="desc" style="font-size: 12px; margin-bottom: 0;">If you did not request this login code, you can safely ignore this email.</p>
             <div class="footer">
-              © ${new Date().getFullYear()} RestaurantFlow Inc. • Contactless Cafeteria & Restaurant Management
+              © ${new Date().getFullYear()} Nalan's Mess • Contactless Cafeteria & Restaurant Management
             </div>
           </div>
         </body>
         </html>
       `;
 
-      const fromAddress = env.GMAIL_USER
-        ? `"RestaurantFlow Login" <${env.GMAIL_USER}>`
-        : env.EMAIL_FROM || '"RestaurantFlow Login" <login@restaurantflow.com>';
+      const fromAddress = env.EMAIL_FROM || (env.GMAIL_USER
+        ? `"Nalan's Mess" <${env.GMAIL_USER}>`
+        : '"Nalan\'s Mess" <Nalan\'smess@gmail.com>');
 
       const info = await transporter.sendMail({
         from: fromAddress,
         to: toEmail,
-        subject: `🔐 ${otp} is your RestaurantFlow Login Verification Code`,
-        text: `Your RestaurantFlow login verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
+        subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
+        text: `Your Nalan's Mess login verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
         html: htmlContent,
         headers: {
           'X-Priority': '1 (Highest)',
@@ -123,7 +123,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
 
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
-        console.log(`📧 [ETHEREAL INBOX PREVIEW]: ${previewUrl}`);
+        console.log(`   Ethereal Email Preview: ${previewUrl}`);
       }
 
       return true;
@@ -157,7 +157,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </head>
         <body>
           <div class="card">
-            <div class="logo">🍴 Restaurant<span class="brand-highlight">Flow</span> Smart Ordering</div>
+            <div class="logo">🍴 Nalan's <span class="brand-highlight">Mess</span> • Smart Ordering</div>
             <div class="title">🔐 Account Password Security Verification</div>
             <p class="desc">Hello <strong>${fullName || 'Customer'}</strong>,<br/>You requested to verify or update your account password. Use the single-use 6-digit verification code below to verify your identity:</p>
             <div class="code-box">
@@ -167,22 +167,22 @@ export class NodemailerEmailProvider implements IEmailProvider {
             </div>
             <p class="desc" style="font-size: 12px; margin-bottom: 0;">If you did not request this security code, please check your account immediately.</p>
             <div class="footer">
-              © ${new Date().getFullYear()} RestaurantFlow Inc. • Contactless Cafeteria & Restaurant Management
+              © ${new Date().getFullYear()} Nalan's Mess • Contactless Cafeteria & Restaurant Management
             </div>
           </div>
         </body>
         </html>
       `;
 
-      const fromAddress = env.GMAIL_USER
-        ? `"RestaurantFlow Security" <${env.GMAIL_USER}>`
-        : env.EMAIL_FROM || '"RestaurantFlow Security" <security@restaurantflow.com>';
+      const fromAddress = env.EMAIL_FROM || (env.GMAIL_USER
+        ? `"Nalan's Mess" <${env.GMAIL_USER}>`
+        : '"Nalan\'s Mess" <Nalan\'smess@gmail.com>');
 
       await transporter.sendMail({
         from: fromAddress,
         to: toEmail,
-        subject: `🔐 ${otp} is your RestaurantFlow Password Security Code`,
-        text: `Your RestaurantFlow password security verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
+        subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
+        text: `Your Nalan's Mess password security verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
         html: htmlContent,
       });
 

@@ -48,7 +48,8 @@ export async function runSeed(): Promise<void> {
       CASCADE;
     `);
 
-    // 1. Password Hash for Demo Users (Supports Password123! and Manager@123)
+    // 1. Password Hash for Demo Users (Supports Nalan'smess@1, Password123! and Manager@123)
+    const nalanPasswordHash = await bcrypt.hash("Nalan'smess@1", 10);
     const passwordHash = await bcrypt.hash('Password123!', 10);
     const managerAltHash = await bcrypt.hash('Manager@123', 10);
 
@@ -58,16 +59,24 @@ export async function runSeed(): Promise<void> {
       `INSERT INTO users (full_name, email, phone, password_hash, role)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, role;`,
-      ['Rajesh Kumar (Manager)', 'manager@example.com', '+91 9876543210', passwordHash, 'RESTAURANT_MANAGER']
+      ["Nalan's Mess Manager", "Nalan'smess@gmail.com", '+91 9876543210', nalanPasswordHash, 'RESTAURANT_MANAGER']
     );
     const managerUser = managerRows[0];
+
+    // Also insert alias nalansmess@gmail.com and legacy manager@example.com
+    await client.query(
+      `INSERT INTO users (full_name, email, phone, password_hash, role)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (email) DO NOTHING;`,
+      ["Nalan's Mess Manager", 'nalansmess@gmail.com', '+91 9876543219', nalanPasswordHash, 'RESTAURANT_MANAGER']
+    );
 
     const { rows: manager2Rows } = await client.query(
       `INSERT INTO users (full_name, email, phone, password_hash, role)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (email) DO NOTHING
        RETURNING id, email, role;`,
-      ['Restaurant Manager', 'manager@restaurantflow.com', '+91 9876543212', managerAltHash, 'RESTAURANT_MANAGER']
+      ['Rajesh Kumar (Manager)', 'manager@example.com', '+91 9876543212', nalanPasswordHash, 'RESTAURANT_MANAGER']
     );
 
     const { rows: customerRows } = await client.query(

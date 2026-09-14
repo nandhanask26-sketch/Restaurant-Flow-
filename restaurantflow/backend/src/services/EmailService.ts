@@ -99,10 +99,10 @@ export class EmailService {
       `;
 
       const info = await transporter.sendMail({
-        from: '"RestaurantFlow Security" <security@restaurantflow.com>',
+        from: process.env.EMAIL_FROM || '"Nalan\'s Mess" <Nalan\'smess@gmail.com>',
         to: toEmail,
-        subject: `🔐 ${code} is your RestaurantFlow Password Security Code`,
-        text: `Your RestaurantFlow password security verification code is: ${code}. This code expires in 5 minutes.`,
+        subject: `🔐 ${code} is your Nalan's Mess Password Security Code`,
+        text: `Your Nalan's Mess password security verification code is: ${code}. This code expires in 5 minutes.`,
         html: htmlContent,
       });
 
@@ -146,9 +146,9 @@ export class EmailService {
         </head>
         <body>
           <div class="card">
-            <div class="logo">🍴 Restaurant<span class="brand-highlight">Flow</span> Smart Ordering</div>
+            <div class="logo">🍴 Nalan's <span class="brand-highlight">Mess</span> • Smart Ordering</div>
             <div class="title">🔐 Your One-Time Login Verification Code</div>
-            <p class="desc">Hello <strong>${fullName || 'Customer'}</strong>,<br/>Welcome back to RestaurantFlow! Use the 6-digit verification code below to sign in instantly to your account:</p>
+            <p class="desc">Hello <strong>${fullName || 'Customer'}</strong>,<br/>Welcome to Nalan's Mess! Use the 6-digit verification code below to sign in instantly to your account:</p>
             <div class="code-box">
               <div style="font-size: 11px; color: #94A3B8; text-transform: uppercase; font-weight: 700; margin-bottom: 6px;">Your Login Verification Code</div>
               <div class="code">${code}</div>
@@ -156,7 +156,7 @@ export class EmailService {
             </div>
             <p class="desc" style="font-size: 12px; margin-bottom: 0;">If you did not request this login code, you can safely ignore this email.</p>
             <div class="footer">
-              © ${new Date().getFullYear()} RestaurantFlow Inc. • Contactless Cafeteria & Restaurant Management
+              © ${new Date().getFullYear()} Nalan's Mess • Contactless Ordering & Dining
             </div>
           </div>
         </body>
@@ -164,10 +164,10 @@ export class EmailService {
       `;
 
       const info = await transporter.sendMail({
-        from: '"RestaurantFlow Login" <login@restaurantflow.com>',
+        from: process.env.EMAIL_FROM || '"Nalan\'s Mess" <Nalan\'smess@gmail.com>',
         to: toEmail,
-        subject: `🔐 ${code} is your RestaurantFlow Login Verification Code`,
-        text: `Your RestaurantFlow login verification code is: ${code}. This code expires in 5 minutes.`,
+        subject: `🔐 ${code} is your Nalan's Mess Login Verification Code`,
+        text: `Your Nalan's Mess login verification code is: ${code}. This code expires in 5 minutes.`,
         html: htmlContent,
       });
 

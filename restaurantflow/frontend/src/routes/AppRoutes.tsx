@@ -53,7 +53,7 @@ export const AppRoutes: React.FC = () => {
       </Route>
 
       {/* Manager Protected Routes */}
-      <Route element={<ProtectedRoute allowedRoles={['RESTAURANT_MANAGER', 'ADMIN']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['RESTAURANT_MANAGER', 'MANAGER', 'ADMIN']} />}>
         <Route path="/manager" element={<ManagerLayout />}>
           <Route index element={<Navigate to="/manager/profile" replace />} />
           <Route path="profile" element={<ManagerRestaurantProfilePage />} />
