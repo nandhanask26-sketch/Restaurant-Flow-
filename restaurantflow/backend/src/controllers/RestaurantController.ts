@@ -45,7 +45,11 @@ export class RestaurantController {
       const restaurantId = req.params.id;
       const { isOpen } = req.body;
 
-      if (req.user?.role === 'RESTAURANT_MANAGER' && req.user.restaurantId !== restaurantId) {
+      if (
+        (req.user?.role === 'RESTAURANT_MANAGER' || req.user?.role === 'MANAGER') &&
+        req.user.restaurantId &&
+        req.user.restaurantId !== restaurantId
+      ) {
         throw new ForbiddenError('You can only update status for your assigned restaurant');
       }
 
@@ -77,7 +81,11 @@ export class RestaurantController {
     try {
       const restaurantId = req.params.id;
 
-      if (req.user?.role === 'RESTAURANT_MANAGER' && req.user.restaurantId !== restaurantId) {
+      if (
+        (req.user?.role === 'RESTAURANT_MANAGER' || req.user?.role === 'MANAGER') &&
+        req.user.restaurantId &&
+        req.user.restaurantId !== restaurantId
+      ) {
         throw new ForbiddenError('You can only update details for your assigned restaurant');
       }
 

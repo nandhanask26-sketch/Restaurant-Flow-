@@ -53,7 +53,10 @@ export class OrderController {
       const status = req.query.status as string | undefined;
       const search = req.query.search as string | undefined;
 
-      const isManager = req.user?.role === 'RESTAURANT_MANAGER';
+      const isManager =
+        req.user?.role === 'RESTAURANT_MANAGER' ||
+        req.user?.role === 'MANAGER' ||
+        req.user?.role === 'ADMIN';
       const restaurantId = isManager
         ? req.user?.restaurantId || (req.query.restaurantId as string)
         : (req.query.restaurantId as string);
@@ -88,7 +91,11 @@ export class OrderController {
       if (req.user?.role === 'CUSTOMER' && order.userId !== req.user.userId) {
         throw new ForbiddenError('You can only view your own orders');
       }
-      if (req.user?.role === 'RESTAURANT_MANAGER' && order.restaurantId !== req.user.restaurantId) {
+      if (
+        (req.user?.role === 'RESTAURANT_MANAGER' || req.user?.role === 'MANAGER') &&
+        req.user.restaurantId &&
+        order.restaurantId !== req.user.restaurantId
+      ) {
         throw new ForbiddenError('You can only view orders for your restaurant');
       }
 

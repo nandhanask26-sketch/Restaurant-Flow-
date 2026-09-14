@@ -8,7 +8,19 @@ export function requireRole(...allowedRoles: UserRole[]) {
       return next(new UnauthorizedError('Authentication required'));
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    const userRole = req.user.role;
+    const hasRole = allowedRoles.some((role) => {
+      if (role === userRole) return true;
+      if (
+        (role === 'RESTAURANT_MANAGER' || role === 'MANAGER') &&
+        (userRole === 'RESTAURANT_MANAGER' || userRole === 'MANAGER')
+      ) {
+        return true;
+      }
+      return false;
+    });
+
+    if (!hasRole) {
       return next(
         new ForbiddenError(
           `Access forbidden: requires one of the following roles: [${allowedRoles.join(', ')}]`

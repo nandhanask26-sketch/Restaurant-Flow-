@@ -30,7 +30,7 @@ export async function authMiddleware(
     const payload = verifyAccessToken(token);
 
     // If role is manager, lookup their associated restaurant if not in payload
-    if (payload.role === 'RESTAURANT_MANAGER' && !payload.restaurantId) {
+    if ((payload.role === 'RESTAURANT_MANAGER' || payload.role === 'MANAGER') && !payload.restaurantId) {
       const { rows } = await query(
         `SELECT restaurant_id FROM restaurant_managers WHERE user_id = $1 LIMIT 1`,
         [payload.userId]

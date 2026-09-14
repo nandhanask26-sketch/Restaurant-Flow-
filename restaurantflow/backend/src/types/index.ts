@@ -1,4 +1,4 @@
-export type UserRole = 'CUSTOMER' | 'RESTAURANT_MANAGER' | 'ADMIN';
+export type UserRole = 'CUSTOMER' | 'RESTAURANT_MANAGER' | 'MANAGER' | 'ADMIN';
 
 export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'EMAIL_OTP' | 'PHONE_OTP';
 
