@@ -4,7 +4,6 @@ import {
   ShoppingBag, 
   User, 
   LogOut, 
-  Menu as MenuIcon,
   ChefHat,
   Sun,
   Moon,
@@ -18,12 +17,11 @@ import { useThemeStore } from '../store/themeStore';
 import { InstallAppModal } from './InstallAppModal';
 
 interface NavbarProps {
-  onToggleSidebar?: () => void;
   restaurantStatus?: boolean;
   restaurantName?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatus, restaurantName }) => {
+export const Navbar: React.FC<NavbarProps> = ({ restaurantStatus, restaurantName }) => {
   const [showInstallModal, setShowInstallModal] = useState(false);
   const { user, logout } = useAuthStore();
   const { getItemCount } = useCartStore();
@@ -36,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
     navigate('/login');
   };
 
-  const isManager = user?.role === 'RESTAURANT_MANAGER' || user?.role === 'ADMIN';
+  const isManager = user?.role === 'RESTAURANT_MANAGER' || user?.role === 'ADMIN' || user?.role === 'MANAGER';
   const logoInitial = restaurantName ? restaurantName.trim().charAt(0).toUpperCase() : 'C';
   const userInitial = user?.fullName ? user.fullName.trim().charAt(0).toUpperCase() : 'U';
 
@@ -46,23 +44,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
         
         {/* Left: Brand Identity */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {onToggleSidebar && !isManager && (
-            <button
-              onClick={onToggleSidebar}
-              className="lg:hidden p-2 rounded-xl text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-200/60 dark:hover:bg-slate-800 transition flex-shrink-0"
-            >
-              <MenuIcon className="w-5 h-5" />
-            </button>
-          )}
-
-          <Link to={isManager ? '/manager/profile' : '/customer/dashboard'} className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+          <Link to={isManager ? '/manager/dashboard' : '/customer/dashboard'} className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
             {/* Green Rounded Square Logo with White Letter */}
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0D5C3A] text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-sm group-hover:scale-105 transition-transform flex-shrink-0">
               <span>{logoInitial}</span>
             </div>
 
             <div className="flex flex-col min-w-0">
-              <span className="font-serif font-bold text-sm sm:text-lg tracking-tight text-[#1C1917] dark:text-stone-100 truncate max-w-[110px] xs:max-w-[150px] sm:max-w-xs">
+              <span className="font-serif font-bold text-sm sm:text-lg tracking-tight text-[#1C1917] dark:text-stone-100 truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">
                 {restaurantName || 'RestaurantFlow'}
               </span>
               <div className="flex items-center gap-1.5 min-w-0">
@@ -104,21 +93,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
 
         {/* Right Navigation & Profile */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-          {/* Mobile App Download Button: Customer Only */}
+          {/* Mobile App Download Button: Customer Desktop/Tablet Only (mobile uses bottom nav & prompt) */}
           {!isManager && (
             <button
               type="button"
               onClick={() => setShowInstallModal(true)}
               title="Download RestaurantFlow Android APK or Web App"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-[#F5EFE6] dark:hover:bg-slate-800 text-stone-800 dark:text-stone-200 border border-[#DDD0C0] dark:border-slate-700 text-xs font-bold transition shadow-2xs flex-shrink-0"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-[#F5EFE6] dark:hover:bg-slate-800 text-stone-800 dark:text-stone-200 border border-[#DDD0C0] dark:border-slate-700 text-xs font-bold transition shadow-2xs flex-shrink-0"
             >
               <Smartphone className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-              <span className="hidden sm:inline">Get App</span>
-              <span className="sm:hidden text-[11px] font-black">App</span>
+              <span>Get App</span>
             </button>
           )}
 
-          {/* Theme Toggle (Dark / Light Mode) - PROMINENT & ALWAYS VISIBLE */}
+          {/* Theme Toggle (Dark / Light Mode) - ALWAYS VISIBLE */}
           <button
             type="button"
             onClick={toggleTheme}
@@ -147,20 +135,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, restaurantStatu
             </button>
           )}
 
-          {/* Cart Icon with Counter Badge for Customer */}
+          {/* Cart Icon for Customer (Desktop Only - on phones customer uses bottom nav) */}
           {!isManager && (
             <Link
               to="/customer/cart"
-              className="relative p-2 rounded-xl bg-white dark:bg-slate-900 border border-[#DDD0C0] dark:border-slate-700 text-stone-800 dark:text-stone-200 hover:text-emerald-700 transition flex items-center shadow-2xs flex-shrink-0"
+              className="hidden sm:flex relative p-2 rounded-xl bg-white dark:bg-slate-900 border border-[#DDD0C0] dark:border-slate-700 text-stone-800 dark:text-stone-200 hover:text-emerald-700 transition items-center shadow-2xs flex-shrink-0"
             >
               <ShoppingBag className="w-5 h-5 text-[#292524] dark:text-stone-200" />
-              {cartCount > 0 ? (
+              {cartCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#EA580C] text-white rounded-full text-xs font-bold flex items-center justify-center shadow-sm animate-bounce">
                   {cartCount}
-                </span>
-              ) : (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#EA580C] text-white rounded-full text-[10px] font-bold flex items-center justify-center">
-                  0
                 </span>
               )}
             </Link>

@@ -10,7 +10,6 @@ import { SOCKET_EVENTS } from '../types/socketEvents';
 import { useCartStore } from '../store/cartStore';
 
 export const CustomerLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [restaurantStatus, setRestaurantStatus] = useState<boolean | undefined>(undefined);
   const [restaurantName, setRestaurantName] = useState<string>('');
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -64,14 +63,13 @@ export const CustomerLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F8F5EE] dark:bg-[#0E1217] text-[#1C1917] dark:text-stone-100 flex flex-col pb-20 lg:pb-8 transition-colors duration-200 w-full max-w-full overflow-x-hidden">
       <Navbar
-        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         restaurantStatus={restaurantStatus}
         restaurantName={restaurantName}
       />
 
       <div className="pt-16 w-full">
-        {/* Top Horizontal Sub-Navigation Tabs Bar matching screenshot */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
+        {/* Top Horizontal Sub-Navigation Tabs Bar (Desktop Only - Hidden on Mobile) */}
+        <div className="hidden lg:block w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar border-b border-[#E8DFD1] dark:border-stone-800">
             <NavLink
               to="/customer/dashboard"
@@ -149,9 +147,6 @@ export const CustomerLayout: React.FC = () => {
             </NavLink>
           </div>
         </div>
-
-        {/* Mobile Slide-in Drawer (only when hamburger is clicked on mobile) */}
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         {/* Main Viewport */}
         <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 min-w-0 overflow-x-hidden">
