@@ -3,11 +3,6 @@ import axios from 'axios';
 // Smart API Base URL resolver: adapts to Render Cloud, Custom Domain, or Local Dev
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
-    const customServer = localStorage.getItem('rf_custom_server');
-    if (customServer) {
-      return `${customServer.replace(/\/$/, '')}/api`;
-    }
-
     // Only local Vite development server proxies /api to localhost:5000
     if (window.location.hostname === 'localhost' && window.location.port === '5173') {
       return '/api';
