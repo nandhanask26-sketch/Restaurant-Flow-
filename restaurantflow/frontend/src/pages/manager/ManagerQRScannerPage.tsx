@@ -66,9 +66,10 @@ export const ManagerQRScannerPage: React.FC = () => {
   const loadDeliveredHistory = async () => {
     try {
       setHistoryLoading(true);
-      const url = restaurantId
-        ? `/orders?status=DELIVERED&limit=50&restaurantId=${restaurantId}`
-        : `/orders?status=DELIVERED&limit=50`;
+      const url =
+        restaurantId && restaurantId !== 'undefined'
+          ? `/orders?status=DELIVERED&limit=50&restaurantId=${restaurantId}`
+          : `/orders?status=DELIVERED&limit=50`;
       const { data } = await apiClient.get(url);
       setDeliveredHistory(data.data || []);
     } catch (err) {

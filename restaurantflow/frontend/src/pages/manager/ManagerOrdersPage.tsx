@@ -63,7 +63,10 @@ export const ManagerOrdersPage: React.FC = () => {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      let query = `/orders?page=${page}&limit=15&restaurantId=${restaurantId}`;
+      let query = `/orders?page=${page}&limit=15`;
+      if (restaurantId && restaurantId !== 'undefined') {
+        query += `&restaurantId=${restaurantId}`;
+      }
       if (statusFilter !== 'ALL') query += `&status=${statusFilter}`;
       if (search.trim()) query += `&search=${encodeURIComponent(search.trim())}`;
 
