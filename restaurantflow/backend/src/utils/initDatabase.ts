@@ -21,6 +21,25 @@ export async function ensureInitialData(): Promise<void> {
       return;
     }
 
+    // 1b. Ensure menu_schedules constraint allows BEVERAGES meal type
+    try {
+      const scheduleTableCheck = await query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' AND table_name = 'menu_schedules'
+        );
+      `);
+      if (scheduleTableCheck.rows[0]?.exists) {
+        await query(`
+          ALTER TABLE menu_schedules DROP CONSTRAINT IF EXISTS menu_schedules_meal_type_check;
+          ALTER TABLE menu_schedules ADD CONSTRAINT menu_schedules_meal_type_check 
+            CHECK (meal_type IN ('BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS', 'BEVERAGES', 'ALL_DAY'));
+        `);
+      }
+    } catch (constraintErr) {
+      logger.warn({ err: constraintErr }, 'Could not update menu_schedules_meal_type_check constraint');
+    }
+
     // 2. Compute bcrypt password hash for Nalan'smess@1
     const nalanPasswordHash = await bcrypt.hash("Nalan'smess@1", 10);
 

@@ -10,8 +10,10 @@ export const SOCKET_EVENTS = {
   ORDER_PAYMENT_UPDATED: 'order:payment_updated',
   ORDER_DELIVERED: 'order:delivered',
 
-  // Restaurant events
+  // Restaurant & Menu events
   RESTAURANT_STATUS_CHANGED: 'restaurant:status_changed',
   RESTAURANT_UPDATED: 'restaurant:updated',
   INVENTORY_UPDATED: 'inventory:updated',
+  MENU_UPDATED: 'menu:updated',
+  MENU_SCHEDULE_UPDATED: 'menu_schedule:updated',
 } as const;

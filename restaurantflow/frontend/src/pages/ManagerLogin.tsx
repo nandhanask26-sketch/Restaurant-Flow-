@@ -141,7 +141,7 @@ export const ManagerLogin: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Nalan'smess@gmail.com"
+                placeholder="Enter manager email"
                 autoComplete="username"
                 className="glass-input pl-10 text-sm"
               />
@@ -157,16 +157,17 @@ export const ManagerLogin: React.FC = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter manager password"
+                autoComplete="current-password"
                 className="glass-input pl-10 pr-10 text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white transition"
+                className="absolute right-3.5 top-3.5 p-0.5 text-slate-400 hover:text-white transition focus:outline-none"
                 title={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -190,6 +191,17 @@ export const ManagerLogin: React.FC = () => {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
+
+        {/* Customer Guidance Link */}
+        <div className="text-center pt-3 pb-1">
+          <Link
+            to="/login"
+            className="text-xs text-slate-400 hover:text-amber-300 transition inline-flex items-center gap-1.5 font-medium"
+          >
+            <span>Are you a customer?</span>
+            <span className="text-amber-400 underline font-bold">Go to Customer Login →</span>
+          </Link>
+        </div>
 
         {/* Encrypted Cloud Connection Trust Badge */}
         <div className="mt-6 pt-4 border-t border-slate-800/80 text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-400">

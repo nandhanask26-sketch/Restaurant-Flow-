@@ -14,10 +14,12 @@ import {
   Leaf
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
-import { Food } from '../../types';
+import { Food, MenuSchedule } from '../../types';
 import { FoodCard } from '../../components/FoodCard';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { EmptyState } from '../../components/EmptyState';
+import { useSocket } from '../../hooks/useSocket';
+import { SOCKET_EVENTS } from '../../types/socketEvents';
 
 export type MealPeriod = 'ALL' | 'BREAKFAST' | 'LUNCH' | 'SNACKS' | 'DINNER' | 'BEVERAGES';
 
@@ -136,39 +138,83 @@ export const CustomerMenuPage: React.FC = () => {
   }>();
 
   const [foods, setFoods] = useState<Food[]>([]);
+  const [schedules, setSchedules] = useState<MenuSchedule[]>([]);
   const [selectedMealPeriod, setSelectedMealPeriod] = useState<MealPeriod>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [vegOnly, setVegOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadCatalog() {
-      setLoading(true);
-      try {
-        let restId = restaurantId;
-        if (!restId) {
-          const restRes = await apiClient.get('/restaurants');
-          if (restRes.data.data && restRes.data.data.length > 0) {
-            restId = restRes.data.data[0].id;
-          }
-        }
+  const { on, off } = useSocket(restaurantId);
 
-        if (restId) {
-          const foodsRes = await apiClient.get(`/foods?restaurantId=${restId}`);
-          setFoods(foodsRes.data.data || []);
+  const loadCatalog = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    try {
+      let restId = restaurantId;
+      if (!restId) {
+        const restRes = await apiClient.get('/restaurants');
+        if (restRes.data.data && restRes.data.data.length > 0) {
+          restId = restRes.data.data[0].id;
         }
-      } catch (err) {
-        console.error('Failed to load menu:', err);
-      } finally {
-        setLoading(false);
       }
+
+      if (restId) {
+        const todayDate = new Date().toISOString().split('T')[0];
+        const [foodsRes, schedRes] = await Promise.allSettled([
+          apiClient.get(`/foods?restaurantId=${restId}`),
+          apiClient.get(`/menu/daily?restaurantId=${restId}&date=${todayDate}`),
+        ]);
+
+        if (foodsRes.status === 'fulfilled') {
+          setFoods(foodsRes.value.data.data || []);
+        }
+        if (schedRes.status === 'fulfilled') {
+          setSchedules(schedRes.value.data.data || []);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load menu catalog:', err);
+    } finally {
+      if (showLoading) setLoading(false);
     }
-    loadCatalog();
+  };
+
+  useEffect(() => {
+    loadCatalog(true);
   }, [restaurantId]);
 
-  // Filter foods by Meal Period, Search and Vegetarian
+  // Real-time live synchronization: when manager adds/updates items or daily schedules
+  useEffect(() => {
+    const handleLiveSync = () => {
+      loadCatalog(false);
+    };
+
+    on(SOCKET_EVENTS.MENU_UPDATED, handleLiveSync);
+    on(SOCKET_EVENTS.MENU_SCHEDULE_UPDATED, handleLiveSync);
+    on(SOCKET_EVENTS.INVENTORY_UPDATED, handleLiveSync);
+    on(SOCKET_EVENTS.RESTAURANT_STATUS_CHANGED, handleLiveSync);
+
+    return () => {
+      off(SOCKET_EVENTS.MENU_UPDATED, handleLiveSync);
+      off(SOCKET_EVENTS.MENU_SCHEDULE_UPDATED, handleLiveSync);
+      off(SOCKET_EVENTS.INVENTORY_UPDATED, handleLiveSync);
+      off(SOCKET_EVENTS.RESTAURANT_STATUS_CHANGED, handleLiveSync);
+    };
+  }, [on, off, restaurantId]);
+
+  // Filter foods by Meal Period (using daily schedule or category fallback), Search and Vegetarian
   const filteredFoods = foods.filter((food) => {
-    const matchMeal = matchesMealPeriod(food, selectedMealPeriod);
+    let matchMeal = true;
+    if (selectedMealPeriod !== 'ALL') {
+      const activeSchedule = schedules.find(
+        (s) => s.mealType === selectedMealPeriod && s.isActive
+      );
+      if (activeSchedule && activeSchedule.items && activeSchedule.items.length > 0) {
+        matchMeal = activeSchedule.items.some((item) => item.id === food.id);
+      } else {
+        matchMeal = matchesMealPeriod(food, selectedMealPeriod);
+      }
+    }
+
     const matchSearch =
       searchTerm.trim() === '' ||
       food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

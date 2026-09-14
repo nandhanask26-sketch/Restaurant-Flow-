@@ -3,6 +3,8 @@ import { MenuService } from '../services/MenuService';
 import { AuditService } from '../services/AuditService';
 import { sendSuccess } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+import { emitToRestaurant, emitGlobal } from '../websocket/socketServer';
+import { SOCKET_EVENTS } from '../websocket/socketEvents';
 
 export class MenuController {
   private menuService: MenuService;
@@ -44,6 +46,10 @@ export class MenuController {
         foodIds
       );
 
+      // Broadcast live menu schedule update to all connected customers & managers
+      emitToRestaurant(restaurantId, SOCKET_EVENTS.MENU_SCHEDULE_UPDATED, schedule);
+      emitGlobal(SOCKET_EVENTS.MENU_SCHEDULE_UPDATED, schedule);
+
       await this.auditService.record('MENU_SCHEDULED', 'MENU', {
         userId: req.user?.userId,
         restaurantId,
@@ -61,6 +67,7 @@ export class MenuController {
   deleteSchedule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await this.menuService.deleteSchedule(req.params.id);
+      emitGlobal(SOCKET_EVENTS.MENU_SCHEDULE_UPDATED, { id: req.params.id, deleted: true });
       sendSuccess(res, { deleted: true }, 'Menu schedule removed');
     } catch (error) {
       next(error);

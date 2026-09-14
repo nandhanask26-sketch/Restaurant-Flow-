@@ -3,6 +3,8 @@ import { FoodService } from '../services/FoodService';
 import { AuditService } from '../services/AuditService';
 import { sendSuccess } from '../utils/response';
 import { ForbiddenError, BadRequestError } from '../utils/errors';
+import { emitToRestaurant, emitGlobal } from '../websocket/socketServer';
+import { SOCKET_EVENTS } from '../websocket/socketEvents';
 
 export class FoodController {
   private foodService: FoodService;
@@ -54,6 +56,10 @@ export class FoodController {
 
       const food = await this.foodService.createFood(restaurantId, req.body);
 
+      // Real-time broadcast to customers and managers
+      emitToRestaurant(restaurantId, SOCKET_EVENTS.MENU_UPDATED, food);
+      emitGlobal(SOCKET_EVENTS.MENU_UPDATED, food);
+
       await this.auditService.record('FOOD_ADDED', 'FOOD', {
         userId: req.user?.userId,
         restaurantId,
@@ -79,6 +85,10 @@ export class FoodController {
 
       const updated = await this.foodService.updateFood(foodId, req.body);
 
+      // Real-time broadcast to customers and managers
+      emitToRestaurant(existing.restaurantId, SOCKET_EVENTS.MENU_UPDATED, updated);
+      emitGlobal(SOCKET_EVENTS.MENU_UPDATED, updated);
+
       await this.auditService.record('FOOD_UPDATED', 'FOOD', {
         userId: req.user?.userId,
         restaurantId: existing.restaurantId,
@@ -103,6 +113,10 @@ export class FoodController {
       }
 
       await this.foodService.deleteFood(foodId);
+
+      // Real-time broadcast to customers and managers
+      emitToRestaurant(existing.restaurantId, SOCKET_EVENTS.MENU_UPDATED, { id: foodId, deleted: true });
+      emitGlobal(SOCKET_EVENTS.MENU_UPDATED, { id: foodId, deleted: true });
 
       await this.auditService.record('FOOD_DELETED', 'FOOD', {
         userId: req.user?.userId,

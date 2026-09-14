@@ -343,3 +343,19 @@ html.dark ::-webkit-scrollbar-track {
 html.dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
+
+@keyframes scanLaser {
+  0% {
+    top: 5%;
+  }
+  50% {
+    top: 92%;
+  }
+  100% {
+    top: 5%;
+  }
+}
+
+.animate-scan-laser {
+  animation: scanLaser 2.2s ease-in-out infinite;
+}

@@ -141,7 +141,7 @@ export const updateInventorySchema = z.object({
 
 export const createMenuScheduleSchema = z.object({
   menuDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date format must be YYYY-MM-DD'),
-  mealType: z.enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS', 'ALL_DAY']),
+  mealType: z.enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACKS', 'BEVERAGES', 'ALL_DAY']),
   title: z.string().optional(),
   foodIds: z.array(z.string().uuid()).min(1, 'At least one food item must be selected'),
 });

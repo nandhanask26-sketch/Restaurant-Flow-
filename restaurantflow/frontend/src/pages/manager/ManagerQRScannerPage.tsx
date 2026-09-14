@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { 
   ScanLine, 
   CheckCircle2, 
@@ -8,7 +8,7 @@ import {
   ShoppingBag, 
   ShieldCheck, 
   Clock, 
-  User,
+  User, 
   Sparkles,
   X,
   Check,
@@ -17,7 +17,8 @@ import {
   Zap,
   RefreshCw,
   Trash2,
-  Banknote
+  Banknote,
+  Camera
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { Order } from '../../types';
@@ -37,6 +38,13 @@ export const ManagerQRScannerPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cashCollecting, setCashCollecting] = useState(false);
+
+  // Camera Live Scanner State
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(true);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isScanningRef = useRef(false);
 
   // Smart Order Queue State
   const [queueOrders, setQueueOrders] = useState<Order[]>([]);
@@ -132,34 +140,7 @@ export const ManagerQRScannerPage: React.FC = () => {
     }
   };
 
-  // Initialize camera scanner on page
-  useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
-    const timer = setTimeout(() => {
-      try {
-        scanner = new Html5QrcodeScanner(
-          'page-qr-reader',
-          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-          false
-        );
-        scanner.render(
-          (text) => {
-            handleVerifyCode(text);
-          },
-          () => {}
-        );
-      } catch (err) {
-        console.warn('Scanner camera init error:', err);
-      }
-    }, 400);
-
-    return () => {
-      clearTimeout(timer);
-      if (scanner) {
-        scanner.clear().catch(() => {});
-      }
-    };
-  }, []);
+  const handleVerifyCodeRef = useRef<(code: string) => Promise<void>>();
 
   const handleVerifyCode = async (code: string) => {
     if (!code.trim()) return;
@@ -185,6 +166,93 @@ export const ManagerQRScannerPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  handleVerifyCodeRef.current = handleVerifyCode;
+
+  // Auto-start camera viewfinder directly without file chooser
+  const startCamera = async () => {
+    setCameraLoading(true);
+    setCameraError(null);
+
+    // Stop any previously running camera instance safely
+    if (scannerRef.current) {
+      try {
+        if (isScanningRef.current) {
+          await scannerRef.current.stop();
+          isScanningRef.current = false;
+        }
+        await scannerRef.current.clear();
+      } catch (_) {}
+    }
+
+    try {
+      const qrScanner = new Html5Qrcode('page-qr-reader');
+      scannerRef.current = qrScanner;
+
+      const scanConfig = {
+        fps: 15,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
+      const onScanSuccess = (decodedText: string) => {
+        if (handleVerifyCodeRef.current) {
+          handleVerifyCodeRef.current(decodedText);
+        }
+      };
+
+      const onScanError = () => {
+        // Frame did not match a QR code, keep listening
+      };
+
+      try {
+        // 1. Prioritize mobile back camera
+        await qrScanner.start({ facingMode: 'environment' }, scanConfig, onScanSuccess, onScanError);
+        isScanningRef.current = true;
+        setCameraActive(true);
+        setCameraLoading(false);
+      } catch (envErr) {
+        console.warn('Direct environment camera start failed, enumerating cameras...', envErr);
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          const preferredCam = cameras[cameras.length - 1];
+          await qrScanner.start(preferredCam.id, scanConfig, onScanSuccess, onScanError);
+          isScanningRef.current = true;
+          setCameraActive(true);
+          setCameraLoading(false);
+        } else {
+          throw new Error('No video camera hardware was detected on this device.');
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to open camera:', err);
+      isScanningRef.current = false;
+      setCameraActive(false);
+      setCameraLoading(false);
+      setCameraError(
+        err.message || 'Camera permission was denied or camera is unavailable. You can enter verification code below.'
+      );
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      startCamera();
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      if (scannerRef.current) {
+        if (isScanningRef.current) {
+          scannerRef.current.stop().catch(() => {});
+          isScanningRef.current = false;
+        }
+        try {
+          scannerRef.current.clear();
+        } catch (_) {}
+      }
+    };
+  }, []);
 
   const handleDeliverOrder = async () => {
     if (!scannedOrder) return;
@@ -284,13 +352,83 @@ export const ManagerQRScannerPage: React.FC = () => {
         {/* Left Column: Camera Scanner & Inputs */}
         <div className="md:col-span-6 space-y-4">
           <div className="glass-card p-5 bg-slate-900 border-slate-800 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Camera QR Reader
-            </h3>
-            <div
-              id="page-qr-reader"
-              className="w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-800"
-            />
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-emerald-400" />
+                Live Camera QR Reader
+              </h3>
+              {cameraActive && (
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Auto-Scanning
+                </span>
+              )}
+            </div>
+
+            <div className="relative w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 min-h-[290px] flex items-center justify-center">
+              {/* HTML5 QR Container */}
+              <div id="page-qr-reader" className="w-full h-full" />
+
+              {/* Viewfinder Target Overlays & Live Laser Scanning Bar */}
+              {cameraActive && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-56 h-56 border-2 border-emerald-500/40 rounded-3xl relative overflow-hidden shadow-2xl">
+                    {/* Laser scanning line */}
+                    <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-200 to-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.9)] animate-scan-laser" />
+                    {/* Viewfinder Target Corners */}
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
+                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
+                  </div>
+                </div>
+              )}
+
+              {/* Camera Starting / Loading State */}
+              {cameraLoading && (
+                <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-4 text-center z-10">
+                  <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mb-2" />
+                  <p className="text-xs font-bold text-slate-200">Opening Camera...</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Directly launching live camera viewfinder</p>
+                </div>
+              )}
+
+              {/* Camera Error / Permission Denied Fallback */}
+              {cameraError && (
+                <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center space-y-3 z-10">
+                  <AlertCircle className="w-8 h-8 text-amber-400" />
+                  <div>
+                    <p className="text-xs font-bold text-slate-200">Camera Unavailable</p>
+                    <p className="text-[11px] text-slate-400 mt-1 max-w-xs">{cameraError}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Try Opening Camera Again</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Viewfinder controls */}
+            {cameraActive && (
+              <div className="flex items-center justify-between text-xs text-slate-400 px-1 pt-0.5">
+                <span className="text-[11px] text-slate-400">
+                  Point camera at customer pickup QR code
+                </span>
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="hover:text-white transition inline-flex items-center gap-1 text-[11px] text-slate-300 font-semibold"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Restart Camera</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Manual Verification Code Input */}
