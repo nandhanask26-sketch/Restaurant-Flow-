@@ -87,11 +87,22 @@ export async function ensureInitialData(): Promise<void> {
           [acc.hash, userId]
         );
       } else {
+        let phoneToUse: string | null = acc.phone;
+        if (phoneToUse) {
+          const phoneCheck = await query(
+            `SELECT id FROM users WHERE phone = $1`,
+            [phoneToUse]
+          );
+          if (phoneCheck.rows.length > 0) {
+            phoneToUse = null;
+          }
+        }
+
         const created = await query(
           `INSERT INTO users (full_name, email, phone, password_hash, role, is_active, email_verified, phone_verified, auth_provider)
            VALUES ($1, $2, $3, $4, 'RESTAURANT_MANAGER', TRUE, TRUE, TRUE, 'PASSWORD')
            RETURNING id`,
-          [acc.fullName, acc.email, acc.phone, acc.hash]
+          [acc.fullName, acc.email, phoneToUse, acc.hash]
         );
         userId = created.rows[0].id;
       }

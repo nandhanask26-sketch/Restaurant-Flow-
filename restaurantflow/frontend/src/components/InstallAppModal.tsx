@@ -31,7 +31,7 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Direct APK download URLs
-  const globalApkUrl = 'https://files.catbox.moe/9srqc6.apk';
+  const globalApkUrl = 'https://files.catbox.moe/qyjwyt.apk';
   const wifiApkUrl = 'http://10.18.101.206:5000/RestaurantFlow.apk';
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const localApkUrl = `${currentOrigin}/RestaurantFlow.apk`;
