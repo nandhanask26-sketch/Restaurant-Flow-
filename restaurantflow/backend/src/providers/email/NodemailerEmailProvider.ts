@@ -24,10 +24,10 @@ export class NodemailerEmailProvider implements IEmailProvider {
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // STARTTLS: universally accessible and bypasses SSL handshake blocks
-        pool: true,
-        maxConnections: 10,
-        maxMessages: 200,
+        secure: false, // STARTTLS
+        connectionTimeout: 3500, // 3.5s connection timeout (fails fast if firewalled)
+        greetingTimeout: 3500,
+        socketTimeout: 4000,
         auth: {
           user: gmailUser,
           pass: gmailPass,
@@ -45,7 +45,9 @@ export class NodemailerEmailProvider implements IEmailProvider {
         host: env.SMTP_HOST,
         port: parseInt(env.SMTP_PORT || '587', 10),
         secure: env.SMTP_SECURE === 'true',
-        pool: true,
+        connectionTimeout: 3500,
+        greetingTimeout: 3500,
+        socketTimeout: 4000,
         auth: {
           user: env.SMTP_USER,
           pass: env.SMTP_PASS,
@@ -65,7 +67,6 @@ export class NodemailerEmailProvider implements IEmailProvider {
   async sendLoginOtpEmail(options: SendOtpEmailOptions): Promise<boolean> {
     try {
       const { toEmail, fullName, otp, expiryMinutes = 5 } = options;
-      const transporter = await this.getTransporter();
 
       const htmlContent = `
         <!DOCTYPE html>
@@ -103,11 +104,64 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
+      // 1. Prioritize High-Performance HTTPS REST APIs (Port 443 - never blocked by cloud firewalls)
+      if (env.RESEND_API_KEY) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: env.EMAIL_FROM || "Nalan's Mess <onboarding@resend.dev>",
+              to: [toEmail],
+              reply_to: "Nalan'smess@gmail.com",
+              subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
+              html: htmlContent,
+            }),
+          });
+          if (res.ok) {
+            console.log(`✅ [RESEND HTTP API SENT] To: ${toEmail}`);
+            return true;
+          }
+        } catch (httpErr) {
+          console.warn('⚠️ [RESEND API DISPATCH FAILED]', httpErr);
+        }
+      }
+
+      if (env.BREVO_API_KEY) {
+        try {
+          const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+              'api-key': env.BREVO_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sender: { name: "Nalan's Mess", email: 'nalansmess@gmail.com' },
+              to: [{ email: toEmail, name: fullName || 'Customer' }],
+              replyTo: { email: 'nalansmess@gmail.com', name: "Nalan's Mess" },
+              subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
+              htmlContent: htmlContent,
+            }),
+          });
+          if (res.ok) {
+            console.log(`✅ [BREVO HTTP API SENT] To: ${toEmail}`);
+            return true;
+          }
+        } catch (httpErr) {
+          console.warn('⚠️ [BREVO API DISPATCH FAILED]', httpErr);
+        }
+      }
+
+      // 2. Direct SMTP Transport with Strict 3.8s Non-Blocking Race Guard
       const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
       const fromAddress = `"Nalan's Mess" <${senderUser}>`;
       const replyToAddress = "Nalan'smess@gmail.com";
 
-      const info = await transporter.sendMail({
+      const transporter = await this.getTransporter();
+      const sendPromise = transporter.sendMail({
         from: fromAddress,
         replyTo: replyToAddress,
         to: toEmail,
@@ -121,16 +175,17 @@ export class NodemailerEmailProvider implements IEmailProvider {
         },
       });
 
-      console.log(`✅ [GMAIL SMTP SENT] To: ${toEmail} | Message ID: ${info.messageId}`);
-      if (info.response) {
-        console.log(`   SMTP Server Response: ${info.response}`);
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 3800)
+      );
+
+      const info = await Promise.race([sendPromise, timeoutPromise]);
+      if (!info) {
+        console.warn('⚠️ [SMTP TIMEOUT] Outbound SMTP connection timed out (likely firewalled by cloud host free tier).');
+        return false;
       }
 
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      if (previewUrl) {
-        console.log(`   Ethereal Email Preview: ${previewUrl}`);
-      }
-
+      console.log(`✅ [GMAIL SMTP SENT] To: ${toEmail} | Message ID: ${(info as any).messageId}`);
       return true;
     } catch (error) {
       console.error('❌ [EMAIL DISPATCH ERROR]', error);
@@ -141,7 +196,6 @@ export class NodemailerEmailProvider implements IEmailProvider {
   async sendSecurityOtpEmail(options: SendOtpEmailOptions): Promise<boolean> {
     try {
       const { toEmail, fullName, otp, expiryMinutes = 5 } = options;
-      const transporter = await this.getTransporter();
 
       const htmlContent = `
         <!DOCTYPE html>
@@ -179,11 +233,34 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
+      if (env.RESEND_API_KEY) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: env.EMAIL_FROM || "Nalan's Mess <onboarding@resend.dev>",
+              to: [toEmail],
+              reply_to: "Nalan'smess@gmail.com",
+              subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
+              html: htmlContent,
+            }),
+          });
+          if (res.ok) return true;
+        } catch {
+          // Fall through
+        }
+      }
+
       const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
       const fromAddress = `"Nalan's Mess" <${senderUser}>`;
       const replyToAddress = "Nalan'smess@gmail.com";
 
-      await transporter.sendMail({
+      const transporter = await this.getTransporter();
+      const sendPromise = transporter.sendMail({
         from: fromAddress,
         replyTo: replyToAddress,
         to: toEmail,
@@ -192,7 +269,12 @@ export class NodemailerEmailProvider implements IEmailProvider {
         html: htmlContent,
       });
 
-      return true;
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), 3800)
+      );
+
+      const info = await Promise.race([sendPromise, timeoutPromise]);
+      return !!info;
     } catch (error) {
       console.error('❌ [EMAIL DISPATCH ERROR]', error);
       return false;
