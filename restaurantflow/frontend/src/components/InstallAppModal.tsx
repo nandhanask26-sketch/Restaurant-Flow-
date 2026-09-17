@@ -27,15 +27,12 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'APK' | 'IPHONE'>('APK');
-  const [downloadSource, setDownloadSource] = useState<'GLOBAL' | 'LOCAL'>('GLOBAL');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // Direct APK download URLs
-  const globalApkUrl = 'https://files.catbox.moe/1h1b3l.apk';
-  const wifiApkUrl = 'http://10.18.101.206:5000/RestaurantFlow.apk';
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const localApkUrl = `${currentOrigin}/RestaurantFlow.apk`;
-  const primaryApkUrl = downloadSource === 'GLOBAL' ? globalApkUrl : wifiApkUrl;
+  // Direct Worldwide Cloud APK download URL (Accessible from anywhere on 4G/5G/Wi-Fi)
+  const primaryApkUrl = 'https://tmpfiles.org/dl/wlwQq0EUIw3l/app-debug.apk';
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://restaurantflow-frontend.onrender.com';
+
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -144,36 +141,24 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
 
           {activeTab === 'APK' ? (
             <>
-              {/* Network Source Selector */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
-                <span className="text-[11px] font-bold text-slate-400 pl-1">
-                  Network:
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setDownloadSource('GLOBAL')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition flex items-center gap-1.5 ${
-                      downloadSource === 'GLOBAL'
-                        ? 'bg-emerald-500 text-slate-950 shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Globe className="w-3 h-3" />
-                    <span>Anywhere (4G/5G/Any Wi-Fi)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDownloadSource('LOCAL')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition flex items-center gap-1.5 ${
-                      downloadSource === 'LOCAL'
-                        ? 'bg-brand-500 text-slate-950 shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <span>Local Wi-Fi</span>
-                  </button>
+              {/* Worldwide Cloud Badge */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 font-bold">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-emerald-400 block">
+                      Worldwide Cloud Connected
+                    </span>
+                    <span className="text-[10px] text-stone-400 block">
+                      Accessible anywhere on 4G, 5G, or any Wi-Fi network globally
+                    </span>
+                  </div>
                 </div>
+                <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                  LIVE
+                </span>
               </div>
 
               {/* PRIMARY ACTION: Download APK Button */}
@@ -186,12 +171,10 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({
                   className="btn-primary w-full py-4 text-sm font-black flex items-center justify-center gap-2.5 shadow-md"
                 >
                   <Download className="w-5 h-5" />
-                  <span>Download RestaurantFlow.apk ({downloadSource === 'GLOBAL' ? 'Worldwide Cloud' : 'Local Wi-Fi'})</span>
+                  <span>Download RestaurantFlow APK (Worldwide Cloud)</span>
                 </a>
                 <p className="text-[11px] text-center text-stone-500 dark:text-stone-400">
-                  {downloadSource === 'GLOBAL' 
-                    ? 'Global high-speed CDN • Works on any phone, anywhere in the world'
-                    : 'Fast local network transfer • Requires connection to restaurant Wi-Fi'}
+                  Global high-speed cloud CDN • Works on any Android phone anywhere in the world
                 </p>
               </div>
 
