@@ -14,7 +14,9 @@ import {
   Copy,
   Check,
   Utensils,
-  Clock
+  Clock,
+  Calendar,
+  KeyRound
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiClient } from '../../api/client';
@@ -22,12 +24,15 @@ import { Order } from '../../types';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { useSocket } from '../../hooks/useSocket';
 import { SOCKET_EVENTS } from '../../types/socketEvents';
+import { getPassOtp, formatTokenDate, formatTokenTime } from '../../utils/token';
 
 export const CustomerOrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedOtp, setCopiedOtp] = useState(false);
+
 
   const { on, off } = useSocket();
 
@@ -71,6 +76,14 @@ export const CustomerOrderDetailsPage: React.FC = () => {
     setTimeout(() => setCopiedToken(false), 2000);
   };
 
+  const handleCopyOtp = () => {
+    const otp = getPassOtp(order?.qrCode?.verificationCode, order?.id);
+    if (!otp) return;
+    navigator.clipboard.writeText(otp);
+    setCopiedOtp(true);
+    setTimeout(() => setCopiedOtp(false), 2000);
+  };
+
   if (loading) {
     return (
       <div className="max-w-xl mx-auto py-10 space-y-4">
@@ -99,6 +112,13 @@ export const CustomerOrderDetailsPage: React.FC = () => {
   const isUpiRejected = (order.paymentMethod === 'UPI' || order.payment?.paymentMethod === 'UPI') && !isPaid;
   const isRedeemed = order.status === 'DELIVERED' || order.qrCode?.isScanned;
   const verificationCode = order.qrCode?.verificationCode || `VERIFY-${order.id.substring(0, 8).toUpperCase()}`;
+
+  const passOtp = getPassOtp(order.qrCode?.verificationCode, order.id);
+  const formattedTokenDate = formatTokenDate(order.requestedFoodAt || order.createdAt);
+  const { timeStr: tokenServingTime, slotLabel: tokenSlotLabel } = formatTokenTime(
+    order.requestedFoodAt,
+    order.preferredTimeType
+  );
 
   // Operational status info
   const getStatusInfo = (status: string) => {
@@ -233,56 +253,122 @@ export const CustomerOrderDetailsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Token Highlight Hero */}
-            <div className="mt-7 text-center space-y-2">
-              <span className="text-[11px] font-bold tracking-widest text-[#78716C] dark:text-stone-400 uppercase inline-flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Pickup Token Number
-              </span>
-
-              <div className="flex items-center justify-center gap-2">
-                <div className="px-6 py-2.5 bg-[#EBF7EE] dark:bg-emerald-950/50 border-2 border-[#0D5C3A]/25 dark:border-emerald-500/30 rounded-2xl shadow-inner inline-flex items-center gap-3">
-                  <span className="text-4xl sm:text-5xl font-mono font-black text-[#0D5C3A] dark:text-emerald-400 tracking-wider">
-                    #{order.orderToken}
+            {/* Token & Pass OTP Dual Hero Display */}
+            <div className="mt-6 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. Token Number Card */}
+                <div className="p-4 rounded-2xl bg-[#EBF7EE] dark:bg-emerald-950/40 border-2 border-[#0D5C3A]/25 dark:border-emerald-500/30 flex flex-col items-center justify-center text-center shadow-inner">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#0D5C3A] dark:text-emerald-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    Pickup Token Number
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleCopyToken}
-                    title="Copy token number"
-                    className="p-1.5 rounded-lg text-[#0D5C3A] dark:text-emerald-400 hover:bg-[#0D5C3A]/10 transition"
-                  >
-                    {copiedToken ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 opacity-70" />}
-                  </button>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-3xl sm:text-4xl font-mono font-black text-[#0D5C3A] dark:text-emerald-300 tracking-wider">
+                      #{order.orderToken}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyToken}
+                      title="Copy token number"
+                      className="p-1 rounded-lg text-[#0D5C3A] dark:text-emerald-400 hover:bg-[#0D5C3A]/10 transition"
+                    >
+                      {copiedToken ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 opacity-70" />}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-[#0D5C3A]/80 dark:text-emerald-400/80 font-medium mt-0.5">
+                    Show to staff at counter
+                  </span>
+                </div>
+
+                {/* 2. Generated Pass OTP Card */}
+                <div className="p-4 rounded-2xl bg-[#FAF8F5] dark:bg-[#19222E] border-2 border-[#E2DDD3] dark:border-stone-700 flex flex-col items-center justify-center text-center shadow-inner">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-stone-600 dark:text-stone-300 flex items-center gap-1">
+                    <KeyRound className="w-3 h-3 text-amber-500" />
+                    Generated Pass OTP
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-3xl sm:text-4xl font-mono font-black text-amber-700 dark:text-amber-400 tracking-widest">
+                      {passOtp.slice(0, 3)} {passOtp.slice(3)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyOtp}
+                      title="Copy pass OTP"
+                      className="p-1 rounded-lg text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 transition"
+                    >
+                      {copiedOtp ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 opacity-70" />}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400 font-medium mt-0.5">
+                    Speak or show OTP to counter
+                  </span>
                 </div>
               </div>
 
-              <p className="text-xs text-stone-500 dark:text-stone-400 pt-1 max-w-sm mx-auto">
-                Show this token number and QR code at the counter to collect your food
-              </p>
+              {/* Token Time & Date Information Bar */}
+              <div className="p-3.5 rounded-2xl bg-stone-100/80 dark:bg-[#10151C] border border-[#E2DDD3] dark:border-stone-800 text-xs flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
+                  <Calendar className="w-4 h-4 text-[#0D5C3A] dark:text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400">
+                      Token Date
+                    </span>
+                    <span className="font-bold text-stone-900 dark:text-stone-100">
+                      {formattedTokenDate}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
+                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400">
+                      Token Serving Time
+                    </span>
+                    <span className="font-bold text-stone-900 dark:text-stone-100">
+                      {tokenServingTime} <span className="text-[10px] font-semibold text-stone-500 dark:text-stone-400">({tokenSlotLabel})</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="block text-[10px] uppercase font-bold text-stone-500 dark:text-stone-400">
+                    Order Placed
+                  </span>
+                  <span className="font-mono text-xs font-bold text-stone-700 dark:text-stone-300">
+                    {formattedDate}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* QR Code Presentation Inset */}
           <div className="p-6 sm:p-7 flex flex-col items-center justify-center text-center">
             <div className="relative p-4 sm:p-5 bg-white rounded-2xl shadow-md border-2 border-[#0D5C3A]/20 dark:border-emerald-500/30 inline-block">
-              {/* Top Token badge on QR */}
-              <div className="mb-2 px-3 py-1 bg-[#FAF8F5] text-[#0D5C3A] rounded-full text-[11px] font-mono font-black border border-[#E2DDD3] shadow-2xs flex items-center justify-center gap-1.5 mx-auto">
+              {/* Top Token & OTP badge on QR */}
+              <div className="mb-2 px-3.5 py-1 bg-[#FAF8F5] text-[#0D5C3A] rounded-full text-[11px] font-mono font-black border border-[#E2DDD3] shadow-2xs flex items-center justify-center gap-2 mx-auto">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#0D5C3A] animate-pulse" />
                 <span>TOKEN #{order.orderToken}</span>
+                <span className="text-stone-400">•</span>
+                <span className="text-amber-700">OTP {passOtp}</span>
               </div>
 
               <QRCodeSVG
                 value={verificationCode}
-                size={180}
+                size={185}
                 level="H"
                 includeMargin={false}
                 className={isRedeemed ? 'opacity-20 grayscale' : ''}
               />
 
               <div className="mt-2.5 text-center space-y-0.5">
-                <span className="text-xs font-mono font-black text-stone-900 tracking-wider block">
-                  {order.orderToken}
-                </span>
+                <div className="flex items-center justify-center gap-1 text-xs font-mono font-black text-stone-900 tracking-wider">
+                  <span>Pass OTP:</span>
+                  <span className="text-[#0D5C3A] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
+                    {passOtp}
+                  </span>
+                </div>
                 <span className="text-[10px] font-mono text-stone-500 block uppercase">
                   {verificationCode}
                 </span>
@@ -412,7 +498,7 @@ export const CustomerOrderDetailsPage: React.FC = () => {
             Counter Pickup Instructions
           </h4>
           <p className="leading-relaxed">
-            Please wait for token <strong className="font-mono font-bold text-[#0D5C3A] dark:text-emerald-400">#{order.orderToken}</strong> to be announced at the counter. The staff will scan your QR code to deliver your meal.
+            Please show Token <strong className="font-mono font-bold text-[#0D5C3A] dark:text-emerald-400">#{order.orderToken}</strong> and Pass OTP <strong className="font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">{passOtp}</strong> to the counter staff. They will scan your QR code to verify your food items and hand over your meal.
           </p>
         </div>
       </div>

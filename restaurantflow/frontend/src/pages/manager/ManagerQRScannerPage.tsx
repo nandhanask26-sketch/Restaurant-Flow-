@@ -18,7 +18,10 @@ import {
   RefreshCw,
   Trash2,
   Banknote,
-  Camera
+  Camera,
+  Calendar,
+  KeyRound,
+  Utensils
 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { Order } from '../../types';
@@ -28,16 +31,20 @@ import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { EmptyState } from '../../components/EmptyState';
 import { useSocket } from '../../hooks/useSocket';
 import { SOCKET_EVENTS } from '../../types/socketEvents';
+import { getPassOtp, formatTokenDate, formatTokenTime } from '../../utils/token';
 
 export const ManagerQRScannerPage: React.FC = () => {
   const { restaurantId } = useOutletContext<{ restaurantId: string }>();
 
   const [verificationCode, setVerificationCode] = useState('');
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
+  const [alreadyRedeemedScan, setAlreadyRedeemedScan] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cashCollecting, setCashCollecting] = useState(false);
+  const scannedSectionRef = useRef<HTMLDivElement | null>(null);
+
 
   // Camera Live Scanner State
   const [cameraActive, setCameraActive] = useState(false);
@@ -153,10 +160,25 @@ export const ManagerQRScannerPage: React.FC = () => {
         verificationCode: code.trim(),
       });
       setScannedOrder(data.data.order);
-      setSuccessMessage(data.message || `Order #${data.data.order.orderToken} verified & marked as DELIVERED!`);
+      const isAlready = Boolean(data.data.alreadyRedeemed);
+      setAlreadyRedeemedScan(isAlready);
+
+      if (isAlready) {
+        setError(data.message || `⛔ Order #${data.data.order.orderToken} was ALREADY REDEEMED! Check food items below.`);
+        setSuccessMessage(null);
+      } else {
+        setSuccessMessage(data.message || `Order #${data.data.order.orderToken} verified & marked as DELIVERED!`);
+        setError(null);
+      }
+
       setVerificationCode('');
       loadQueue();
       loadDeliveredHistory();
+
+      // Smoothly scroll down on mobile viewports so counter staff sees food items immediately
+      setTimeout(() => {
+        scannedSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -431,11 +453,17 @@ export const ManagerQRScannerPage: React.FC = () => {
             )}
           </div>
 
-          {/* Manual Verification Code Input */}
+          {/* Manual Verification Code / Token / OTP Input */}
           <div className="glass-card p-5 bg-slate-900 border-slate-800 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Enter Verification Code:
-            </h3>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                Verify by Token #, Pass OTP, or QR Code:
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Enter customer's token number (e.g. 1709001 or 001), 6-digit Pass OTP, or full QR code
+              </p>
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -445,30 +473,37 @@ export const ManagerQRScannerPage: React.FC = () => {
             >
               <input
                 type="text"
-                placeholder="e.g. VERIFY-12345678-ABCDEF"
+                placeholder="e.g. #1709001, 639201, or scan QR"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value)}
-                className="glass-input text-xs py-2 font-mono"
+                className="glass-input text-xs py-2.5 font-mono"
               />
               <button
                 type="submit"
                 disabled={loading || !verificationCode.trim()}
-                className="btn-primary text-xs px-4 flex-shrink-0"
+                className="btn-primary text-xs px-4 flex-shrink-0 flex items-center gap-1.5"
               >
-                Verify QR
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                <span>Verify & View</span>
               </button>
             </form>
           </div>
         </div>
 
         {/* Right Column: Verified Order Details & Payment Status Display */}
-        <div className="md:col-span-6 space-y-4">
+        <div ref={scannedSectionRef} className="md:col-span-6 space-y-4">
           {scannedOrder && (() => {
             const isCashOnDelivery =
               scannedOrder.paymentMethod === 'CASH_ON_DELIVERY' ||
               scannedOrder.payment?.paymentMethod === 'CASH_ON_DELIVERY';
             const isPaid = scannedOrder.payment?.status === 'PAID' && !isCashOnDelivery;
             const isCashUnpaid = isCashOnDelivery && scannedOrder.payment?.status !== 'PAID';
+            const passOtp = getPassOtp(scannedOrder.qrCode?.verificationCode, scannedOrder.id);
+            const formattedTokenDate = formatTokenDate(scannedOrder.requestedFoodAt || scannedOrder.createdAt);
+            const { timeStr: tokenServingTime, slotLabel: tokenSlotLabel } = formatTokenTime(
+              scannedOrder.requestedFoodAt,
+              scannedOrder.preferredTimeType
+            );
 
             // GREEN background if Paid via UPI, RED background if Cash on Delivery (Unpaid)
             return (
@@ -480,7 +515,29 @@ export const ManagerQRScannerPage: React.FC = () => {
                 }`}
               >
                 {/* Prominent Header Status Alert Banner */}
-                {isCashUnpaid ? (
+                {alreadyRedeemedScan ? (
+                  <div className="p-4 rounded-2xl bg-amber-500/25 border-2 border-amber-500 text-white flex items-center justify-between shadow-lg">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/30 flex items-center justify-center text-amber-300 flex-shrink-0 animate-pulse">
+                        <AlertCircle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="block uppercase text-[10px] tracking-wider text-amber-300 font-extrabold">
+                          ⛔ QR Code Already Verified
+                        </span>
+                        <h4 className="text-base font-black text-white">
+                          ALREADY REDEEMED — DO NOT RE-DISPENSE FOOD!
+                        </h4>
+                        <span className="text-[11px] text-amber-200 block mt-0.5">
+                          Ordered items and token schedule are displayed below for verification
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-sm">
+                      USED
+                    </span>
+                  </div>
+                ) : isCashUnpaid ? (
                   <div className="p-4 rounded-2xl bg-rose-500/25 border-2 border-rose-500 text-white flex items-center justify-between shadow-lg">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 rounded-xl bg-rose-500/30 flex items-center justify-center text-rose-300 flex-shrink-0 animate-pulse">
@@ -520,29 +577,64 @@ export const ManagerQRScannerPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Token Number & Verification Stamp */}
+                {/* Token Number & Pass OTP Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-white/15">
                   <div>
                     <span className="text-[11px] uppercase font-bold text-slate-300 tracking-wider block">
                       Customer Token Number
                     </span>
-                    <h2 className={`text-4xl font-mono font-black tracking-tight ${isCashUnpaid ? 'text-rose-400' : 'text-emerald-400'}`}>
-                      {scannedOrder.orderToken}
+                    <h2 className={`text-4xl sm:text-5xl font-mono font-black tracking-tight ${isCashUnpaid ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      #{scannedOrder.orderToken}
                     </h2>
                   </div>
                   <div className="text-right">
-                    <span
-                      className={`inline-flex items-center gap-1 text-xs font-black px-3 py-1 rounded-full border shadow-sm ${
-                        isCashUnpaid
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
-                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                      }`}
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {isCashUnpaid ? 'TOKEN VERIFIED (UNPAID)' : 'DELIVERED & QR USED'}
+                    <span className="text-[11px] uppercase font-bold text-slate-300 tracking-wider block flex items-center justify-end gap-1">
+                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                      Pass OTP Code
                     </span>
-                    <span className="block text-[10px] text-slate-400 mt-1">
-                      {scannedOrder.deliveredAt ? new Date(scannedOrder.deliveredAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
+                    <h3 className="text-2xl sm:text-3xl font-mono font-black text-amber-400 tracking-widest">
+                      {passOtp.slice(0, 3)} {passOtp.slice(3)}
+                    </h3>
+                    <span className="block text-[10px] text-slate-400 mt-0.5">
+                      Matches customer's pass code
+                    </span>
+                  </div>
+                </div>
+
+                {/* DEDICATED TOKEN DATE & TIME CARD */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-700/80 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs shadow-inner">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                      Token Date
+                    </span>
+                    <p className="font-black text-white text-sm">
+                      {formattedTokenDate}
+                    </p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      Token Serving Time
+                    </span>
+                    <p className="font-black text-white text-sm">
+                      {tokenServingTime}
+                    </p>
+                    <span className="text-[10px] text-brand-400 font-bold block">
+                      {tokenSlotLabel}
+                    </span>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800 space-y-0.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">
+                      Order Placed At
+                    </span>
+                    <p className="font-mono font-bold text-slate-300 text-sm">
+                      {scannedOrder.createdAt ? new Date(scannedOrder.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </p>
+                    <span className="text-[10px] text-slate-400 block">
+                      {scannedOrder.deliveredAt ? `Verified: ${new Date(scannedOrder.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Live Scan'}
                     </span>
                   </div>
                 </div>
@@ -582,12 +674,22 @@ export const ManagerQRScannerPage: React.FC = () => {
                   <div className="flex items-center justify-between pb-1 border-b border-white/15">
                     <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                       <ShoppingBag className={`w-4 h-4 ${isCashUnpaid ? 'text-rose-400' : 'text-emerald-400'}`} />
-                      Food Items Ordered by Customer:
+                      Food Items Ordered ({scannedOrder.items?.length || 0} Items):
                     </span>
                     <span className="text-[11px] font-mono text-slate-300 font-bold">
-                      #{scannedOrder.orderToken}
+                      Token #{scannedOrder.orderToken}
                     </span>
                   </div>
+
+                  {/* Customer Cooking Instructions / Notes */}
+                  {scannedOrder.notes && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-200">
+                      <span className="font-bold block text-[10px] uppercase tracking-wider text-amber-400">
+                        Customer Special Cooking Request / Notes:
+                      </span>
+                      <p className="mt-0.5 italic font-medium">"{scannedOrder.notes}"</p>
+                    </div>
+                  )}
 
                   <div className={`divide-y rounded-2xl border overflow-hidden ${isCashUnpaid ? 'divide-rose-900/50 bg-slate-950/90 border-rose-500/30' : 'divide-emerald-900/50 bg-slate-950/90 border-emerald-500/30'}`}>
                     {/* Table Header */}
@@ -603,8 +705,9 @@ export const ManagerQRScannerPage: React.FC = () => {
                         key={item.id}
                         className="grid grid-cols-12 px-3.5 py-2.5 items-center text-xs text-slate-200"
                       >
-                        <div className="col-span-6 font-bold text-white truncate">
-                          {item.foodName}
+                        <div className="col-span-6 font-bold text-white truncate flex items-center gap-1.5">
+                          <Utensils className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                          <span className="truncate">{item.foodName}</span>
                         </div>
                         <div className={`col-span-2 text-center font-mono font-black ${isCashUnpaid ? 'text-rose-400' : 'text-emerald-400'}`}>
                           × {item.quantity}
@@ -655,7 +758,12 @@ export const ManagerQRScannerPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => setScannedOrder(null)}
+                    onClick={() => {
+                      setScannedOrder(null);
+                      setAlreadyRedeemedScan(false);
+                      setError(null);
+                      setSuccessMessage(null);
+                    }}
                     className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition"
                   >
                     <span>Ready to Scan Next Customer QR</span>

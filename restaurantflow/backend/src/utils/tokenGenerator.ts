@@ -38,3 +38,19 @@ export function generateVerificationCode(orderId: string): string {
   const randomBytes = crypto.randomBytes(8).toString('hex').toUpperCase();
   return `VERIFY-${orderId.substring(0, 8).toUpperCase()}-${randomBytes}`;
 }
+
+export function getPassOtp(code?: string, orderId?: string): string {
+  if (code) {
+    const match = code.match(/VERIFY-(\d{6})/i);
+    if (match) return match[1];
+  }
+
+  const seed = (code || orderId || 'NALAN-ORDER').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let hash = 5381;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) + hash + seed.charCodeAt(i);
+  }
+  const num = (Math.abs(hash) % 900000) + 100000;
+  return num.toString();
+}
+
