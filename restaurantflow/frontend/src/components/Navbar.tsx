@@ -29,17 +29,22 @@ export const Navbar: React.FC<NavbarProps> = ({ restaurantStatus, restaurantName
   const navigate = useNavigate();
   const cartCount = getItemCount();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const isManager = user?.role === 'RESTAURANT_MANAGER' || user?.role === 'ADMIN' || user?.role === 'MANAGER';
-  const logoInitial = restaurantName ? restaurantName.trim().charAt(0).toUpperCase() : 'C';
+  const logoInitial = restaurantName ? restaurantName.trim().charAt(0).toUpperCase() : (isManager ? 'N' : 'R');
   const userInitial = user?.fullName ? user.fullName.trim().charAt(0).toUpperCase() : 'U';
 
+  const handleLogout = () => {
+    const wasManager = isManager;
+    logout();
+    if (wasManager) {
+      navigate('/manager/login');
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 w-full bg-[#FBF7EE] dark:bg-[#151921] border-b border-[#E8DFD1] dark:border-slate-800 transition-colors z-40 shadow-xs">
+    <header className="fixed top-0 left-0 right-0 w-full bg-[#FBF7EE] dark:bg-[#151921] border-b border-[#E8DFD1] dark:border-slate-800 transition-colors z-40 shadow-xs pt-[env(safe-area-inset-top,0px)]">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         {/* Left: Brand Identity */}
@@ -51,11 +56,11 @@ export const Navbar: React.FC<NavbarProps> = ({ restaurantStatus, restaurantName
             </div>
 
             <div className="flex flex-col min-w-0">
-              <span className="font-serif font-bold text-sm sm:text-lg tracking-tight text-[#1C1917] dark:text-stone-100 truncate max-w-[120px] xs:max-w-[160px] sm:max-w-xs">
-                {restaurantName || 'RestaurantFlow'}
+              <span className="font-sans font-extrabold text-sm sm:text-lg tracking-tight text-[#1C1917] dark:text-white truncate max-w-[130px] xs:max-w-[170px] sm:max-w-xs">
+                {restaurantName || (isManager ? "Nalan's Mess" : 'RestaurantFlow')}
               </span>
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-[8px] sm:text-[9px] uppercase font-bold tracking-wider text-[#78716C] dark:text-slate-400 truncate">
+                <span className="text-[8px] sm:text-[9px] uppercase font-bold tracking-wider text-stone-500 dark:text-emerald-400 truncate">
                   {isManager ? 'Manager Console' : 'SMART ORDERING'}
                 </span>
                 {restaurantStatus !== undefined && (

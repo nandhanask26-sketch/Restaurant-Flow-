@@ -16,20 +16,24 @@ export class NodemailerEmailProvider implements IEmailProvider {
       return this.transporter;
     }
 
-    // 1. Direct High-Speed Gmail Configuration with SSL Connection Pooling
-    if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) {
+    // 1. Direct High-Speed Gmail Configuration with STARTTLS (Port 587)
+    const gmailUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+    const gmailPass = (env.GMAIL_APP_PASSWORD || 'huefqczeusvdbsed').replace(/\s+/g, '');
+
+    if (gmailUser && gmailPass) {
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // Direct SSL handshake for ultra-low latency
-        pool: true, // Keep socket pool warm for instant sub-second delivery
-        maxConnections: 5,
-        maxMessages: 100,
-        rateDelta: 1000,
-        rateLimit: 10,
+        port: 587,
+        secure: false, // STARTTLS: universally accessible and bypasses SSL handshake blocks
+        pool: true,
+        maxConnections: 10,
+        maxMessages: 200,
         auth: {
-          user: env.GMAIL_USER.trim(),
-          pass: env.GMAIL_APP_PASSWORD.replace(/\s+/g, ''),
+          user: gmailUser,
+          pass: gmailPass,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       });
       return this.transporter;
@@ -99,12 +103,13 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
-      const fromAddress = env.EMAIL_FROM || (env.GMAIL_USER
-        ? `"Nalan's Mess" <${env.GMAIL_USER}>`
-        : '"Nalan\'s Mess" <Nalan\'smess@gmail.com>');
+      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const fromAddress = `"Nalan's Mess" <${senderUser}>`;
+      const replyToAddress = "Nalan'smess@gmail.com";
 
       const info = await transporter.sendMail({
         from: fromAddress,
+        replyTo: replyToAddress,
         to: toEmail,
         subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
         text: `Your Nalan's Mess login verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
@@ -174,12 +179,13 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
-      const fromAddress = env.EMAIL_FROM || (env.GMAIL_USER
-        ? `"Nalan's Mess" <${env.GMAIL_USER}>`
-        : '"Nalan\'s Mess" <Nalan\'smess@gmail.com>');
+      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const fromAddress = `"Nalan's Mess" <${senderUser}>`;
+      const replyToAddress = "Nalan'smess@gmail.com";
 
       await transporter.sendMail({
         from: fromAddress,
+        replyTo: replyToAddress,
         to: toEmail,
         subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
         text: `Your Nalan's Mess password security verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,

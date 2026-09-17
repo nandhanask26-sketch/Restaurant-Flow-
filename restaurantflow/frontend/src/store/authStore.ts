@@ -26,7 +26,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   restaurantId: localStorage.getItem('rf_restaurant_id'),
   accessToken: localStorage.getItem('rf_access_token'),
   refreshToken: localStorage.getItem('rf_refresh_token'),
-  isAuthenticated: !!localStorage.getItem('rf_access_token'),
+  isAuthenticated: Boolean(getStoredUser() && localStorage.getItem('rf_access_token')),
 
   setAuth: (user, accessToken, refreshToken, restaurantId) => {
     localStorage.setItem('rf_user', JSON.stringify(user));

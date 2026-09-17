@@ -33,8 +33,18 @@ export const CustomerLogin: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { isAuthenticated, user, setAuth } = useAuthStore();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const isManager =
+        user.role === 'RESTAURANT_MANAGER' ||
+        user.role === 'MANAGER' ||
+        user.role === 'ADMIN';
+      navigate(isManager ? '/manager/dashboard' : '/customer/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // Expiry and Resend Countdown
   useEffect(() => {

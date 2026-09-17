@@ -1,13 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   UtensilsCrossed, 
   ChefHat, 
   ShoppingBag,
   ArrowRight
 } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 export const LandingPage: React.FC = () => {
+  const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const isManager =
+        user.role === 'RESTAURANT_MANAGER' ||
+        user.role === 'MANAGER' ||
+        user.role === 'ADMIN';
+      navigate(isManager ? '/manager/dashboard' : '/customer/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  if (isAuthenticated && user) {
+    return null;
+  }
   return (
     <div className="min-h-screen bg-[#0B0F17] text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 selection:bg-brand-500 selection:text-white relative overflow-hidden">
       {/* Background Subtle Gradient Glows */}

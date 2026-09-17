@@ -12,8 +12,8 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   JWT_ACCESS_SECRET: z.string().min(16).default('development-access-secret-32-chars-minimum-key!'),
   JWT_REFRESH_SECRET: z.string().min(16).default('development-refresh-secret-32-chars-minimum-key!'),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('90d'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('365d'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   PAYMENT_PROVIDER: z.enum(['mock', 'razorpay', 'stripe']).default('mock'),
   LOG_LEVEL: z.string().default('info'),
@@ -35,14 +35,14 @@ const envSchema = z.object({
   TWILIO_PHONE_NUMBER: z.string().optional().default(''),
 
   // Email Gateway Configuration (Gmail / SMTP / Ethereal fallback)
-  GMAIL_USER: z.string().optional().default(''),
-  GMAIL_APP_PASSWORD: z.string().optional().default(''),
+  GMAIL_USER: z.string().optional().default('nandhanask26@gmail.com'),
+  GMAIL_APP_PASSWORD: z.string().optional().default('huefqczeusvdbsed'),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.string().optional().default('587'),
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_SECURE: z.string().optional().default('false'),
-  EMAIL_FROM: z.string().optional().default('"Nalan\'s Mess" <Nalan\'smess@gmail.com>'),
+  EMAIL_FROM: z.string().optional().default('"Nalan\'s Mess" <nandhanask26@gmail.com>'),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

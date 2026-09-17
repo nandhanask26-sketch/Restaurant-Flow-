@@ -95,7 +95,7 @@ export const ManagerLayout: React.FC = () => {
       />
 
       {/* Horizontal Sub-Navigation Tab Bar for Manager (Shown on desktop/tablet, hidden on mobile) */}
-      <div className="hidden lg:block w-full bg-[#FAF8F5] dark:bg-[#151921] border-b border-[#EBE6DD] dark:border-stone-800 fixed top-16 left-0 right-0 z-30 transition-colors shadow-2xs">
+      <div className="hidden lg:block w-full bg-[#FAF8F5] dark:bg-[#151921] border-b border-[#EBE6DD] dark:border-stone-800 fixed top-[calc(4rem+env(safe-area-inset-top,0px))] left-0 right-0 z-30 transition-colors shadow-2xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-1 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth">
             {managerTabs.map((tab) => {
@@ -121,7 +121,7 @@ export const ManagerLayout: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto pt-16 lg:pt-28">
+      <div className="flex-1 flex max-w-7xl w-full mx-auto pt-[calc(4rem+env(safe-area-inset-top,0px))] lg:pt-[calc(7rem+env(safe-area-inset-top,0px))]">
         <main className="flex-1 p-3.5 sm:p-6 lg:p-8 min-w-0">
           <Outlet
             context={{

@@ -29,15 +29,50 @@ import { ManagerQRScannerPage } from '../pages/manager/ManagerQRScannerPage';
 import { ManagerAnalyticsPage } from '../pages/manager/ManagerAnalyticsPage';
 import { ManagerRestaurantProfilePage } from '../pages/manager/ManagerRestaurantProfilePage';
 
+import { useAuthStore } from '../store/authStore';
+
+// Root Route handler:
+// If already logged in, seamlessly forward straight to dashboard (like social media apps).
+// If not logged in, show the LandingPage.
+const RootRoute: React.FC = () => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (isAuthenticated && user) {
+    const isManager =
+      user.role === 'RESTAURANT_MANAGER' ||
+      user.role === 'MANAGER' ||
+      user.role === 'ADMIN';
+    return <Navigate to={isManager ? '/manager/dashboard' : '/customer/dashboard'} replace />;
+  }
+
+  return <LandingPage />;
+};
+
+// Route wrapper for login/register pages:
+// If already logged in, redirect them to their active dashboard instead of showing login form again!
+const PublicOnlyRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (isAuthenticated && user) {
+    const isManager =
+      user.role === 'RESTAURANT_MANAGER' ||
+      user.role === 'MANAGER' ||
+      user.role === 'ADMIN';
+    return <Navigate to={isManager ? '/manager/dashboard' : '/customer/dashboard'} replace />;
+  }
+
+  return children;
+};
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Pages */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<CustomerLogin />} />
-      <Route path="/manager/login" element={<ManagerLogin />} />
-      <Route path="/register/customer" element={<RegisterCustomer />} />
-      <Route path="/register/manager" element={<RegisterManager />} />
+      <Route path="/" element={<RootRoute />} />
+      <Route path="/login" element={<PublicOnlyRoute><CustomerLogin /></PublicOnlyRoute>} />
+      <Route path="/manager/login" element={<PublicOnlyRoute><ManagerLogin /></PublicOnlyRoute>} />
+      <Route path="/register/customer" element={<PublicOnlyRoute><RegisterCustomer /></PublicOnlyRoute>} />
+      <Route path="/register/manager" element={<PublicOnlyRoute><RegisterManager /></PublicOnlyRoute>} />
 
       {/* Customer Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']} />}>

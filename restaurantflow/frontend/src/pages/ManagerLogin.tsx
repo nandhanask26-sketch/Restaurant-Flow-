@@ -24,12 +24,20 @@ export const ManagerLogin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { isAuthenticated, user, setAuth } = useAuthStore();
 
   useEffect(() => {
     // Purge any legacy local IP override so user is always on high-speed Cloud
     localStorage.removeItem('rf_custom_server');
-  }, []);
+
+    if (isAuthenticated && user) {
+      const isManager =
+        user.role === 'RESTAURANT_MANAGER' ||
+        user.role === 'MANAGER' ||
+        user.role === 'ADMIN';
+      navigate(isManager ? '/manager/dashboard' : '/customer/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     let interval: any;

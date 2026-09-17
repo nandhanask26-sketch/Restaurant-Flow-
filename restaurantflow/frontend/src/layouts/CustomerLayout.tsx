@@ -67,7 +67,7 @@ export const CustomerLayout: React.FC = () => {
         restaurantName={restaurantName}
       />
 
-      <div className="pt-16 w-full">
+      <div className="pt-[calc(4rem+env(safe-area-inset-top,0px))] w-full">
         {/* Top Horizontal Sub-Navigation Tabs Bar (Desktop Only - Hidden on Mobile) */}
         <div className="hidden lg:block w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1">
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar border-b border-[#E8DFD1] dark:border-stone-800">

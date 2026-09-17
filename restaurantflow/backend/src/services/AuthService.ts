@@ -357,7 +357,7 @@ export class AuthService {
         restaurantId: restaurant.id,
       });
 
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
       await this.userRepo.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
 
       return { user, restaurantId: restaurant.id, accessToken, refreshToken };
@@ -421,7 +421,7 @@ export class AuthService {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     await this.userRepo.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
 
     const { passwordHash: _, ...cleanUser } = user;
@@ -466,7 +466,7 @@ export class AuthService {
     const newHash = hashToken(newRefreshToken);
 
     await this.userRepo.revokeRefreshToken(tokenH, newHash);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     await this.userRepo.saveRefreshToken(payload.userId, newHash, expiresAt);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
@@ -635,7 +635,7 @@ export class AuthService {
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     await this.userRepo.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
 
     const { passwordHash: _, ...cleanUser } = user as any;

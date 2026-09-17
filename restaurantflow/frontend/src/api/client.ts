@@ -106,11 +106,18 @@ apiClient.interceptors.response.use(
 
         processQueue(null, newAccessToken);
         return apiClient(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         processQueue(refreshError, null);
-        localStorage.removeItem('rf_access_token');
-        localStorage.removeItem('rf_refresh_token');
-        localStorage.removeItem('rf_user');
+        // Only clear tokens if the backend explicitly returned 401 Unauthorized or 403 Forbidden.
+        // If the device is offline, connection timed out, or backend is cold-starting (502/503),
+        // keep the stored session so the user is not logged out!
+        const status = refreshError.response?.status;
+        if (status === 401 || status === 403) {
+          localStorage.removeItem('rf_access_token');
+          localStorage.removeItem('rf_refresh_token');
+          localStorage.removeItem('rf_user');
+          localStorage.removeItem('rf_restaurant_id');
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

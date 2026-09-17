@@ -12,13 +12,13 @@ export interface JwtPayload {
 
 export function generateAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
-    expiresIn: '15m',
+    expiresIn: (env.JWT_ACCESS_EXPIRES_IN || '90d') as any,
   });
 }
 
 export function generateRefreshToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: '7d',
+    expiresIn: (env.JWT_REFRESH_EXPIRES_IN || '365d') as any,
   });
 }
 
