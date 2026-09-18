@@ -36,7 +36,6 @@ export class AuthService {
     success: boolean;
     message: string;
     cooldownSeconds: number;
-    fallbackOtp?: string;
   }> {
     const normalizedEmail = OtpService.normalizeEmail(rawEmail);
 
@@ -71,11 +70,8 @@ export class AuthService {
 
     return {
       success: true,
-      message: emailDelivered
-        ? `A 6-digit verification code has been dispatched to ${normalizedEmail}.`
-        : `A 6-digit verification code has been generated for ${normalizedEmail}.`,
+      message: `A 6-digit verification code has been dispatched to ${normalizedEmail}. Please check your email inbox.`,
       cooldownSeconds: env.OTP_RESEND_COOLDOWN_SECONDS || 30,
-      ...(emailDelivered ? {} : { fallbackOtp: otp }),
     };
   }
 

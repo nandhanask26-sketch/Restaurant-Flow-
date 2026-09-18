@@ -9,7 +9,6 @@ import {
   RotateCw,
   CheckCircle2,
   ShieldCheck,
-  KeyRound,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
@@ -22,7 +21,6 @@ export const CustomerLogin: React.FC = () => {
   const [step, setStep] = useState<'INPUT' | 'VERIFY'>('INPUT');
   const [maskedEmail, setMaskedEmail] = useState('');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [fallbackOtp, setFallbackOtp] = useState<string | null>(null);
 
   // Timers: 5-minute expiry timer & 30-second resend cooldown
   const [expirySeconds, setExpirySeconds] = useState(300);
@@ -100,17 +98,8 @@ export const CustomerLogin: React.FC = () => {
       setExpirySeconds(300);
       setResendCooldown(resData?.cooldownSeconds || 30);
       setCanResend(false);
-
-      if (resData?.fallbackOtp) {
-        setFallbackOtp(resData.fallbackOtp);
-        const digits = resData.fallbackOtp.split('').slice(0, 6);
-        setOtpDigits(digits);
-        setSuccessMsg(`Verification code: ${resData.fallbackOtp}`);
-      } else {
-        setFallbackOtp(null);
-        setOtpDigits(['', '', '', '', '', '']);
-        setSuccessMsg(`6-digit verification code sent to ${masked}`);
-      }
+      setOtpDigits(['', '', '', '', '', '']);
+      setSuccessMsg(`A 6-digit verification code has been sent to ${masked}. Please check your email inbox.`);
 
       setTimeout(() => {
         inputRefs.current[0]?.focus();
@@ -333,32 +322,6 @@ export const CustomerLogin: React.FC = () => {
                 Change Email Address
               </button>
             </div>
-
-            {/* Quick-Verify / Fallback Code Badge */}
-            {fallbackOtp && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between animate-fade-in">
-                <div className="flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <div className="text-xs text-emerald-300">
-                    <span className="font-semibold">Verification Code:</span>{' '}
-                    <span className="font-mono font-bold tracking-widest text-white text-sm bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
-                      {fallbackOtp}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const digits = fallbackOtp.split('').slice(0, 6);
-                    setOtpDigits(digits);
-                    handleVerifyOtp(fallbackOtp);
-                  }}
-                  className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-2 ml-2"
-                >
-                  Verify Now
-                </button>
-              </div>
-            )}
 
             {/* 6 Digit Numeric Input Cells */}
             <div>
