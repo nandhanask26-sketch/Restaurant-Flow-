@@ -16,7 +16,6 @@ export class NodemailerEmailProvider implements IEmailProvider {
       return this.transporter;
     }
 
-    // 1. Direct High-Speed Gmail Configuration with STARTTLS (Port 587)
     const gmailUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
     const gmailPass = (env.GMAIL_APP_PASSWORD || 'huefqczeusvdbsed').replace(/\s+/g, '');
 
@@ -24,10 +23,10 @@ export class NodemailerEmailProvider implements IEmailProvider {
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // STARTTLS
-        connectionTimeout: 3500, // 3.5s connection timeout (fails fast if firewalled)
-        greetingTimeout: 3500,
-        socketTimeout: 4000,
+        secure: false,
+        connectionTimeout: 4000,
+        greetingTimeout: 4000,
+        socketTimeout: 5000,
         auth: {
           user: gmailUser,
           pass: gmailPass,
@@ -39,15 +38,15 @@ export class NodemailerEmailProvider implements IEmailProvider {
       return this.transporter;
     }
 
-    // 2. Custom SMTP Configuration
+    // Custom SMTP Configuration
     if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
       this.transporter = nodemailer.createTransport({
         host: env.SMTP_HOST,
         port: parseInt(env.SMTP_PORT || '587', 10),
         secure: env.SMTP_SECURE === 'true',
-        connectionTimeout: 3500,
-        greetingTimeout: 3500,
-        socketTimeout: 4000,
+        connectionTimeout: 4000,
+        greetingTimeout: 4000,
+        socketTimeout: 5000,
         auth: {
           user: env.SMTP_USER,
           pass: env.SMTP_PASS,
@@ -56,12 +55,72 @@ export class NodemailerEmailProvider implements IEmailProvider {
       return this.transporter;
     }
 
-    // 3. Test & Local Development fallback (instant JSON transport)
     this.transporter = nodemailer.createTransport({
       jsonTransport: true,
     });
 
     return this.transporter;
+  }
+
+  private async sendViaSmtpTransport(
+    port: number,
+    secure: boolean,
+    mailOptions: {
+      from: string;
+      replyTo: string;
+      to: string;
+      subject: string;
+      text: string;
+      html: string;
+    }
+  ): Promise<boolean> {
+    const gmailUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+    const gmailPass = (env.GMAIL_APP_PASSWORD || 'huefqczeusvdbsed').replace(/\s+/g, '');
+
+    if (!gmailUser || !gmailPass) return false;
+
+    return new Promise((resolve) => {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port,
+          secure,
+          connectionTimeout: 4000,
+          greetingTimeout: 4000,
+          socketTimeout: 5000,
+          auth: {
+            user: gmailUser,
+            pass: gmailPass,
+          },
+          tls: {
+            rejectUnauthorized: false,
+          },
+        });
+
+        transporter.sendMail(
+          {
+            ...mailOptions,
+            headers: {
+              'X-Priority': '1 (Highest)',
+              'X-MSMail-Priority': 'High',
+              Importance: 'High',
+            },
+          },
+          (err, info) => {
+            if (err) {
+              console.warn(`⚠️ [Gmail SMTP Port ${port} Failed]:`, err.message);
+              resolve(false);
+            } else {
+              console.log(`✅ [Gmail SMTP Port ${port} SENT] To: ${mailOptions.to} | ID: ${info?.messageId}`);
+              resolve(true);
+            }
+          }
+        );
+      } catch (e: any) {
+        console.warn(`⚠️ [Gmail SMTP Port ${port} Exception]:`, e.message);
+        resolve(false);
+      }
+    });
   }
 
   async sendLoginOtpEmail(options: SendOtpEmailOptions): Promise<boolean> {
@@ -104,7 +163,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
-      // 1. Prioritize High-Performance HTTPS REST APIs (Port 443 - never blocked by cloud firewalls)
+      // 1. High-Performance HTTPS REST APIs (Port 443 - never blocked by cloud firewalls)
       if (env.RESEND_API_KEY) {
         try {
           const res = await fetch('https://api.resend.com/emails', {
@@ -155,38 +214,26 @@ export class NodemailerEmailProvider implements IEmailProvider {
         }
       }
 
-      // 2. Direct SMTP Transport with Strict 3.8s Non-Blocking Race Guard
+      // 2. Direct SMTP Transport: Try Port 465 (SSL) first, then Port 587 (STARTTLS)
       const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
-      const fromAddress = `"Nalan's Mess" <${senderUser}>`;
-      const replyToAddress = "Nalan'smess@gmail.com";
-
-      const transporter = await this.getTransporter();
-      const sendPromise = transporter.sendMail({
-        from: fromAddress,
-        replyTo: replyToAddress,
+      const mailOptions = {
+        from: `"Nalan's Mess" <${senderUser}>`,
+        replyTo: "Nalan'smess@gmail.com",
         to: toEmail,
         subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
         text: `Your Nalan's Mess login verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
         html: htmlContent,
-        headers: {
-          'X-Priority': '1 (Highest)',
-          'X-MSMail-Priority': 'High',
-          'Importance': 'High',
-        },
-      });
+      };
 
-      const timeoutPromise = new Promise<null>((resolve) =>
-        setTimeout(() => resolve(null), 3800)
-      );
+      // Try Port 465 (SSL direct)
+      const sent465 = await this.sendViaSmtpTransport(465, true, mailOptions);
+      if (sent465) return true;
 
-      const info = await Promise.race([sendPromise, timeoutPromise]);
-      if (!info) {
-        console.warn('⚠️ [SMTP TIMEOUT] Outbound SMTP connection timed out (likely firewalled by cloud host free tier).');
-        return false;
-      }
+      // Try Port 587 (STARTTLS)
+      const sent587 = await this.sendViaSmtpTransport(587, false, mailOptions);
+      if (sent587) return true;
 
-      console.log(`✅ [GMAIL SMTP SENT] To: ${toEmail} | Message ID: ${(info as any).messageId}`);
-      return true;
+      return false;
     } catch (error) {
       console.error('❌ [EMAIL DISPATCH ERROR]', error);
       return false;
@@ -255,26 +302,43 @@ export class NodemailerEmailProvider implements IEmailProvider {
         }
       }
 
-      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
-      const fromAddress = `"Nalan's Mess" <${senderUser}>`;
-      const replyToAddress = "Nalan'smess@gmail.com";
+      if (env.BREVO_API_KEY) {
+        try {
+          const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+              'api-key': env.BREVO_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sender: { name: "Nalan's Mess", email: 'nalansmess@gmail.com' },
+              to: [{ email: toEmail, name: fullName || 'Customer' }],
+              replyTo: { email: 'nalansmess@gmail.com', name: "Nalan's Mess" },
+              subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
+              htmlContent: htmlContent,
+            }),
+          });
+          if (res.ok) return true;
+        } catch {
+          // Fall through
+        }
+      }
 
-      const transporter = await this.getTransporter();
-      const sendPromise = transporter.sendMail({
-        from: fromAddress,
-        replyTo: replyToAddress,
+      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const mailOptions = {
+        from: `"Nalan's Mess" <${senderUser}>`,
+        replyTo: "Nalan'smess@gmail.com",
         to: toEmail,
         subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
         text: `Your Nalan's Mess password security verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
         html: htmlContent,
-      });
+      };
 
-      const timeoutPromise = new Promise<null>((resolve) =>
-        setTimeout(() => resolve(null), 3800)
-      );
+      const sent465 = await this.sendViaSmtpTransport(465, true, mailOptions);
+      if (sent465) return true;
 
-      const info = await Promise.race([sendPromise, timeoutPromise]);
-      return !!info;
+      const sent587 = await this.sendViaSmtpTransport(587, false, mailOptions);
+      return sent587;
     } catch (error) {
       console.error('❌ [EMAIL DISPATCH ERROR]', error);
       return false;

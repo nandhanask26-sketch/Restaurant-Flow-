@@ -8,17 +8,74 @@ import { logger } from './logger';
  */
 export async function ensureInitialData(): Promise<void> {
   try {
-    // 1. Verify that the users table exists before querying
-    const tableCheck = await query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = 'users'
-      );
-    `);
+    // 1. Ensure extensions and schema migrations are applied
+    try {
+      await query(`
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-    if (!tableCheck.rows[0]?.exists) {
-      logger.warn('Database tables not yet migrated. Skipping ensureInitialData.');
-      return;
+        CREATE TABLE IF NOT EXISTS users (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          full_name VARCHAR(120) NOT NULL,
+          email VARCHAR(255) UNIQUE,
+          phone VARCHAR(30) UNIQUE,
+          password_hash VARCHAR(255),
+          role VARCHAR(30) NOT NULL CHECK (role IN ('CUSTOMER', 'RESTAURANT_MANAGER', 'ADMIN')),
+          is_active BOOLEAN DEFAULT TRUE NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          token_hash VARCHAR(255) NOT NULL UNIQUE,
+          expires_at TIMESTAMPTZ NOT NULL,
+          is_revoked BOOLEAN DEFAULT FALSE NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          replaced_by_token_hash VARCHAR(255)
+        );
+
+        CREATE TABLE IF NOT EXISTS restaurants (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name VARCHAR(150) NOT NULL,
+          description TEXT,
+          address TEXT NOT NULL,
+          phone VARCHAR(30) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          is_open BOOLEAN DEFAULT TRUE NOT NULL,
+          opening_time VARCHAR(10) DEFAULT '08:00' NOT NULL,
+          closing_time VARCHAR(10) DEFAULT '22:00' NOT NULL,
+          image_url TEXT,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS restaurant_managers (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          is_primary BOOLEAN DEFAULT FALSE NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+          UNIQUE(restaurant_id, user_id)
+        );
+
+        -- Safe column migrations for users
+        ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+        ALTER TABLE users ALTER COLUMN phone DROP NOT NULL;
+        ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE NOT NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE NOT NULL;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(30) DEFAULT 'PASSWORD' NOT NULL;
+
+        -- Safe column migrations for restaurants
+        ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS upi_id VARCHAR(100) DEFAULT 'nandhanask26@oksbi';
+        ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS upi_name VARCHAR(150) DEFAULT 'SK Nandhana';
+        ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS qr_code_url TEXT;
+      `);
+    } catch (schemaErr) {
+      logger.warn({ err: schemaErr }, 'Automatic schema migration check warning');
     }
 
     // 1b. Ensure menu_schedules constraint allows BEVERAGES meal type

@@ -100,4 +100,7 @@ router.post('/send-security-otp', authMiddleware, authController.sendSecurityOtp
 router.post('/verify-security-otp', authMiddleware, authController.verifySecurityOtp);
 router.post('/change-password', authMiddleware, authController.changePassword);
 
+// 8. Live Diagnostics
+router.get('/email-diagnostic', authController.emailDiagnostic);
+
 export default router;

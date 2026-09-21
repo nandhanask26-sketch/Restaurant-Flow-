@@ -245,4 +245,56 @@ export class AuthController {
       next(error);
     }
   };
+
+  emailDiagnostic = async (req: Request, res: Response): Promise<void> => {
+    const net = await import('net');
+    const { query: dbQuery } = await import('../config/database');
+    const { env: configEnv } = await import('../config/env');
+
+    const result: any = {
+      nodeEnv: configEnv.NODE_ENV,
+      hasGmailUser: !!configEnv.GMAIL_USER,
+      hasGmailPassword: !!configEnv.GMAIL_APP_PASSWORD,
+      hasResendApiKey: !!configEnv.RESEND_API_KEY,
+      hasBrevoApiKey: !!configEnv.BREVO_API_KEY,
+    };
+
+    // 1. Check database users table columns
+    try {
+      const colCheck = await dbQuery(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position;`
+      );
+      result.userColumns = colCheck.rows.map((r: any) => r.column_name);
+    } catch (dbErr: any) {
+      result.dbError = dbErr.message;
+    }
+
+    // 2. Test TCP to smtp.gmail.com:587 (STARTTLS)
+    try {
+      result.smtp587 = await new Promise<string>((resolve) => {
+        const s = net.createConnection(587, 'smtp.gmail.com');
+        s.setTimeout(3500);
+        s.on('connect', () => { s.destroy(); resolve('CONNECTED_OK'); });
+        s.on('timeout', () => { s.destroy(); resolve('CONNECTION_TIMEOUT'); });
+        s.on('error', (e: any) => { resolve(`ERROR: ${e.message}`); });
+      });
+    } catch (e: any) {
+      result.smtp587 = e.message;
+    }
+
+    // 3. Test TCP to smtp.gmail.com:465 (SSL)
+    try {
+      result.smtp465 = await new Promise<string>((resolve) => {
+        const s = net.createConnection(465, 'smtp.gmail.com');
+        s.setTimeout(3500);
+        s.on('connect', () => { s.destroy(); resolve('CONNECTED_OK'); });
+        s.on('timeout', () => { s.destroy(); resolve('CONNECTION_TIMEOUT'); });
+        s.on('error', (e: any) => { resolve(`ERROR: ${e.message}`); });
+      });
+    } catch (e: any) {
+      result.smtp465 = e.message;
+    }
+
+    res.json({ success: true, data: result });
+  };
 }

@@ -53,8 +53,9 @@ export function errorHandler(
 
   res.status(500).json({
     success: false,
-    message: 'An unexpected internal server error occurred',
+    message: err.message || 'An unexpected internal server error occurred',
     code: 'INTERNAL_SERVER_ERROR',
-    ...(env.NODE_ENV === 'development' ? { error: err.message } : {}),
+    error: err.message,
+    ...(err.stack && env.NODE_ENV !== 'production' ? { stack: err.stack } : {}),
   });
 }

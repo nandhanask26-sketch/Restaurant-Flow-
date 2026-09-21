@@ -42,9 +42,16 @@ export class AuthService {
     // 1. Generate & store secure hashed OTP in Redis / Memory store
     const { otp } = await OtpService.createAndStoreOtp('EMAIL', normalizedEmail, 'LOGIN');
 
-    // 2. Fetch existing user name if present
-    const existingUser = await this.userRepo.findByEmail(normalizedEmail);
-    const fullName = existingUser?.fullName || 'Customer';
+    // 2. Fetch existing user name if present (non-blocking)
+    let fullName = 'Customer';
+    try {
+      const existingUser = await this.userRepo.findByEmail(normalizedEmail);
+      if (existingUser?.fullName) {
+        fullName = existingUser.fullName;
+      }
+    } catch (lookupErr) {
+      console.warn('⚠️ User lookup non-fatal warning:', lookupErr);
+    }
 
     // 3. Dispatch OTP via Email Provider (resilient fast-fail, never hangs)
     let emailDelivered = false;
