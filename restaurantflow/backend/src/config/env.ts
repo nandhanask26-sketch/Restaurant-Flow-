@@ -34,9 +34,12 @@ const envSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional().default(''),
   TWILIO_PHONE_NUMBER: z.string().optional().default(''),
 
-  // Email Gateway Configuration (Gmail / SMTP / Resend / Brevo fallback)
+  // Email Gateway Configuration (Gmail OAuth2 / SMTP / Resend / Brevo fallback)
   GMAIL_USER: z.string().optional().default('nandhanask26@gmail.com'),
   GMAIL_APP_PASSWORD: z.string().optional().default('huefqczeusvdbsed'),
+  GOOGLE_GMAIL_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_GMAIL_CLIENT_SECRET: z.string().optional().default(''),
+  GOOGLE_GMAIL_REFRESH_TOKEN: z.string().optional().default(''),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.string().optional().default('587'),
   SMTP_USER: z.string().optional().default(''),

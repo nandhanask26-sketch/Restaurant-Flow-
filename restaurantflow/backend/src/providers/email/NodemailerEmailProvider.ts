@@ -62,6 +62,97 @@ export class NodemailerEmailProvider implements IEmailProvider {
     return this.transporter;
   }
 
+  /**
+   * Dispatches email via Google's official Gmail REST API over HTTPS (Port 443).
+   * Uses OAuth 2.0 refresh token to acquire access token automatically.
+   * Completely immune to cloud firewall SMTP port blocks.
+   */
+  private async sendViaGoogleGmailApi(mailOptions: {
+    from: string;
+    replyTo: string;
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<boolean> {
+    const clientId = (env.GOOGLE_GMAIL_CLIENT_ID || env.GOOGLE_CLIENT_ID || '').trim();
+    const clientSecret = (env.GOOGLE_GMAIL_CLIENT_SECRET || env.GOOGLE_CLIENT_SECRET || '').trim();
+    const refreshToken = (env.GOOGLE_GMAIL_REFRESH_TOKEN || '').trim();
+
+    if (!clientId || !clientSecret || !refreshToken) {
+      return false;
+    }
+
+    try {
+      // 1. Refresh Google OAuth2 Access Token over HTTPS (Port 443)
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        const errText = await tokenRes.text();
+        console.warn('⚠️ [GMAIL OAUTH TOKEN REFRESH FAILED]:', tokenRes.status, errText);
+        return false;
+      }
+
+      const tokenData = (await tokenRes.json()) as any;
+      const accessToken = tokenData.access_token;
+      if (!accessToken) return false;
+
+      // 2. Build RFC 2822 MIME message
+      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const utf8Subject = `=?utf-8?B?${Buffer.from(mailOptions.subject).toString('base64')}?=`;
+      const mimeLines = [
+        `From: "Nalan's Mess" <${senderUser}>`,
+        `Reply-To: ${mailOptions.replyTo || "Nalan'smess@gmail.com"}`,
+        `To: ${mailOptions.to}`,
+        `Subject: ${utf8Subject}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=utf-8',
+        'X-Priority: 1 (Highest)',
+        'X-MSMail-Priority: High',
+        'Importance: High',
+        '',
+        mailOptions.html,
+      ];
+      const mimeMessage = mimeLines.join('\r\n');
+      const base64Encoded = Buffer.from(mimeMessage)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      // 3. Send message via Gmail REST API over HTTPS (Port 443)
+      const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ raw: base64Encoded }),
+      });
+
+      if (sendRes.ok) {
+        const sendData = (await sendRes.json()) as any;
+        console.log(`✅ [GMAIL REST API SENT over HTTPS 443] To: ${mailOptions.to} | ID: ${sendData?.id}`);
+        return true;
+      } else {
+        const errText = await sendRes.text();
+        console.warn('⚠️ [GMAIL REST API SEND ERROR]:', sendRes.status, errText);
+        return false;
+      }
+    } catch (apiErr) {
+      console.warn('⚠️ [GMAIL REST API DISPATCH EXCEPTION]:', apiErr);
+      return false;
+    }
+  }
+
   private async sendViaSmtpTransport(
     port: number,
     secure: boolean,
@@ -163,7 +254,21 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
-      // 1. High-Performance HTTPS REST APIs (Port 443 - never blocked by cloud firewalls)
+      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const mailOptions = {
+        from: `"Nalan's Mess" <${senderUser}>`,
+        replyTo: "Nalan'smess@gmail.com",
+        to: toEmail,
+        subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
+        text: `Your Nalan's Mess login verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
+        html: htmlContent,
+      };
+
+      // 1. Google Gmail REST API over HTTPS (Port 443 - Google OAuth2)
+      const sentGoogle = await this.sendViaGoogleGmailApi(mailOptions);
+      if (sentGoogle) return true;
+
+      // 2. High-Performance HTTPS REST APIs (Port 443 - never blocked by cloud firewalls)
       if (env.RESEND_API_KEY) {
         try {
           const res = await fetch('https://api.resend.com/emails', {
@@ -221,22 +326,10 @@ export class NodemailerEmailProvider implements IEmailProvider {
         }
       }
 
-      // 2. Direct SMTP Transport: Try Port 465 (SSL) first, then Port 587 (STARTTLS)
-      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
-      const mailOptions = {
-        from: `"Nalan's Mess" <${senderUser}>`,
-        replyTo: "Nalan'smess@gmail.com",
-        to: toEmail,
-        subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
-        text: `Your Nalan's Mess login verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
-        html: htmlContent,
-      };
-
-      // Try Port 465 (SSL direct)
+      // 3. Direct SMTP Transport: Try Port 465 (SSL) first, then Port 587 (STARTTLS)
       const sent465 = await this.sendViaSmtpTransport(465, true, mailOptions);
       if (sent465) return true;
 
-      // Try Port 587 (STARTTLS)
       const sent587 = await this.sendViaSmtpTransport(587, false, mailOptions);
       if (sent587) return true;
 
@@ -287,6 +380,21 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
+      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const mailOptions = {
+        from: `"Nalan's Mess" <${senderUser}>`,
+        replyTo: "Nalan'smess@gmail.com",
+        to: toEmail,
+        subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
+        text: `Your Nalan's Mess password security verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
+        html: htmlContent,
+      };
+
+      // 1. Google Gmail REST API over HTTPS (Port 443 - Google OAuth2)
+      const sentGoogle = await this.sendViaGoogleGmailApi(mailOptions);
+      if (sentGoogle) return true;
+
+      // 2. High-Performance HTTPS REST APIs (Port 443 - never blocked by cloud firewalls)
       if (env.RESEND_API_KEY) {
         try {
           const res = await fetch('https://api.resend.com/emails', {
@@ -331,16 +439,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
         }
       }
 
-      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
-      const mailOptions = {
-        from: `"Nalan's Mess" <${senderUser}>`,
-        replyTo: "Nalan'smess@gmail.com",
-        to: toEmail,
-        subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
-        text: `Your Nalan's Mess password security verification code is: ${otp}. This code expires in ${expiryMinutes} minutes.`,
-        html: htmlContent,
-      };
-
+      // 3. Direct SMTP Transport: Try Port 465 (SSL) first, then Port 587 (STARTTLS)
       const sent465 = await this.sendViaSmtpTransport(465, true, mailOptions);
       if (sent465) return true;
 

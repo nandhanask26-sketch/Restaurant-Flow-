@@ -255,6 +255,8 @@ export class AuthController {
       nodeEnv: configEnv.NODE_ENV,
       hasGmailUser: !!configEnv.GMAIL_USER,
       hasGmailPassword: !!configEnv.GMAIL_APP_PASSWORD,
+      hasGoogleGmailOAuth: !!(configEnv.GOOGLE_GMAIL_CLIENT_ID && configEnv.GOOGLE_GMAIL_REFRESH_TOKEN),
+      hasGoogleLoginClientId: !!configEnv.GOOGLE_CLIENT_ID,
       hasResendApiKey: !!configEnv.RESEND_API_KEY,
       hasBrevoApiKey: !!configEnv.BREVO_API_KEY,
     };
