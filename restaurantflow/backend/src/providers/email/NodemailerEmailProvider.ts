@@ -183,6 +183,9 @@ export class NodemailerEmailProvider implements IEmailProvider {
           if (res.ok) {
             console.log(`✅ [RESEND HTTP API SENT] To: ${toEmail}`);
             return true;
+          } else {
+            const errText = await res.text();
+            console.warn(`⚠️ [RESEND API ERROR]: ${res.status} - ${errText}`);
           }
         } catch (httpErr) {
           console.warn('⚠️ [RESEND API DISPATCH FAILED]', httpErr);
@@ -191,6 +194,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
 
       if (env.BREVO_API_KEY) {
         try {
+          const senderEmail = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
           const res = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
             headers: {
@@ -198,9 +202,9 @@ export class NodemailerEmailProvider implements IEmailProvider {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              sender: { name: "Nalan's Mess", email: 'nalansmess@gmail.com' },
+              sender: { name: "Nalan's Mess", email: senderEmail },
               to: [{ email: toEmail, name: fullName || 'Customer' }],
-              replyTo: { email: 'nalansmess@gmail.com', name: "Nalan's Mess" },
+              replyTo: { email: "Nalan'smess@gmail.com", name: "Nalan's Mess" },
               subject: `🔐 ${otp} is your Nalan's Mess Login Verification Code`,
               htmlContent: htmlContent,
             }),
@@ -208,6 +212,9 @@ export class NodemailerEmailProvider implements IEmailProvider {
           if (res.ok) {
             console.log(`✅ [BREVO HTTP API SENT] To: ${toEmail}`);
             return true;
+          } else {
+            const errText = await res.text();
+            console.warn(`⚠️ [BREVO API ERROR]: ${res.status} - ${errText}`);
           }
         } catch (httpErr) {
           console.warn('⚠️ [BREVO API DISPATCH FAILED]', httpErr);
@@ -311,9 +318,9 @@ export class NodemailerEmailProvider implements IEmailProvider {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              sender: { name: "Nalan's Mess", email: 'nalansmess@gmail.com' },
+              sender: { name: "Nalan's Mess", email: (env.GMAIL_USER || 'nandhanask26@gmail.com').trim() },
               to: [{ email: toEmail, name: fullName || 'Customer' }],
-              replyTo: { email: 'nalansmess@gmail.com', name: "Nalan's Mess" },
+              replyTo: { email: "Nalan'smess@gmail.com", name: "Nalan's Mess" },
               subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,
               htmlContent: htmlContent,
             }),
