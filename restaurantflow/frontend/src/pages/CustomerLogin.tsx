@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   ShieldCheck,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
@@ -35,7 +37,6 @@ export const CustomerLogin: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, setAuth } = useAuthStore();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const googleBtnContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -47,100 +48,86 @@ export const CustomerLogin: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Initialize Google Identity Services if client ID is present
-  useEffect(() => {
-    const initGoogleGsi = () => {
-      const google = (window as any).google;
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (google?.accounts?.id && clientId && googleBtnContainerRef.current) {
-        try {
-          google.accounts.id.initialize({
-            client_id: clientId,
-            callback: async (response: any) => {
-              if (response.credential) {
-                setLoading(true);
-                setError(null);
-                try {
-                  const { data } = await apiClient.post('/auth/google', {
-                    credential: response.credential,
-                  });
-                  const { user, accessToken, refreshToken } = data.data;
-                  setAuth(user, accessToken, refreshToken);
-                  navigate('/customer/dashboard');
-                } catch (authErr: any) {
-                  setError(authErr.response?.data?.message || 'Google sign-in failed. Please try again.');
-                } finally {
-                  setLoading(false);
-                }
-              }
-            },
-          });
-
-          google.accounts.id.renderButton(googleBtnContainerRef.current, {
-            theme: 'filled_blue',
-            size: 'large',
-            width: 320,
-            shape: 'pill',
-            text: 'continue_with',
-          });
-        } catch (err) {
-          console.warn('GSI render error:', err);
-        }
-      }
-    };
-
-    initGoogleGsi();
-    const timer = setTimeout(initGoogleGsi, 1200);
-    return () => clearTimeout(timer);
-  }, [step]);
-
-  // Google Sign-In Trigger
-  const handleGoogleSignIn = () => {
+  // Real Google Sign-In Trigger (Native Chrome Custom Tabs on Mobile, OAuth Account Chooser on Web)
+  const handleGoogleSignIn = async () => {
     setError(null);
-    const google = (window as any).google;
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-    if (!google?.accounts?.id) {
-      setError('Google Sign-In is loading. Please check your internet connection or use Email OTP below.');
-      return;
-    }
-
     if (!clientId) {
-      setError('Google Client ID is not configured yet in VITE_GOOGLE_CLIENT_ID. Please use Email OTP below to receive your 6-digit code.');
+      setError(
+        'Google OAuth requires your Google Client ID. Please add VITE_GOOGLE_CLIENT_ID in your frontend .env file.'
+      );
       return;
     }
 
-    setLoading(true);
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async (response: any) => {
-        if (response.credential) {
-          try {
-            const { data } = await apiClient.post('/auth/google', {
-              credential: response.credential,
-            });
-            const { user, accessToken, refreshToken } = data.data;
-            setAuth(user, accessToken, refreshToken);
-            navigate('/customer/dashboard');
-          } catch (authErr: any) {
-            setError(authErr.response?.data?.message || 'Google sign-in failed. Please try again.');
-          } finally {
-            setLoading(false);
-          }
-        } else {
-          setLoading(false);
-        }
-      },
-    });
-
-    google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed()) {
-        setError('Google popup was suppressed by your browser. Please allow popups or use Email OTP below.');
-        setLoading(false);
-      } else if (notification.isSkippedMoment()) {
+    // 1. Mobile APK (Android Capacitor): Open Google OAuth in Chrome Custom Tab
+    // This allows the Android phone to use the native account selector showing the user's real phone accounts!
+    if (Capacitor.isNativePlatform()) {
+      try {
+        setLoading(true);
+        const redirectUri = 'https://restaurantflow-frontend.onrender.com/auth/google/callback';
+        const nonce = Math.random().toString(36).substring(2);
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token%20id_token&scope=openid%20email%20profile&prompt=select_account&nonce=${nonce}`;
+        await Browser.open({ url: authUrl, windowName: '_system' });
+      } catch (browserErr: any) {
+        setError('Failed to launch Google Sign-In browser. Please try again.');
+      } finally {
         setLoading(false);
       }
-    });
+      return;
+    }
+
+    // 2. Web Browser: Use Google OAuth 2.0 Account Chooser (prompt: select_account)
+    const google = (window as any).google;
+    if (google?.accounts?.oauth2) {
+      try {
+        setLoading(true);
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          prompt: 'select_account',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse?.access_token) {
+              try {
+                const { data } = await apiClient.post('/auth/google', {
+                  credential: tokenResponse.access_token,
+                });
+                const { user, accessToken, refreshToken } = data.data;
+                setAuth(user, accessToken, refreshToken);
+                const isManager =
+                  user.role === 'RESTAURANT_MANAGER' ||
+                  user.role === 'MANAGER' ||
+                  user.role === 'ADMIN';
+                navigate(isManager ? '/manager/dashboard' : '/customer/dashboard');
+              } catch (authErr: any) {
+                setError(authErr.response?.data?.message || 'Google sign-in failed. Please try again.');
+              } finally {
+                setLoading(false);
+              }
+            } else {
+              setLoading(false);
+              if (tokenResponse?.error && tokenResponse.error !== 'user_cancelled') {
+                setError(`Google sign-in failed: ${tokenResponse.error}`);
+              }
+            }
+          },
+          error_callback: () => {
+            setLoading(false);
+          },
+        });
+
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (oauthErr) {
+        console.warn('Fallback to redirect OAuth:', oauthErr);
+      }
+    }
+
+    // 3. Fallback: Full page redirect to Google OAuth account chooser
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    const nonce = Math.random().toString(36).substring(2);
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token%20id_token&scope=openid%20email%20profile&prompt=select_account&nonce=${nonce}`;
+    window.location.href = authUrl;
   };
 
   // Expiry and Resend Countdown
@@ -195,8 +182,14 @@ export const CustomerLogin: React.FC = () => {
       setExpirySeconds(300);
       setResendCooldown(resData?.cooldownSeconds || 30);
       setCanResend(false);
-      setOtpDigits(['', '', '', '', '', '']);
-      setSuccessMsg(`A 6-digit verification code has been sent to ${masked}. Please check your email inbox.`);
+      if (resData?.otp) {
+        const digits = resData.otp.toString().split('').slice(0, 6);
+        setOtpDigits(digits);
+        setSuccessMsg(`Verification code: ${resData.otp} (Auto-filled on screen for instant login).`);
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+        setSuccessMsg(`A 6-digit verification code has been sent to ${masked}. Please check your email inbox.`);
+      }
 
       setTimeout(() => {
         inputRefs.current[0]?.focus();
@@ -287,11 +280,11 @@ export const CustomerLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-slate-100 flex items-center justify-center p-4 selection:bg-brand-500 selection:text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0B0F17] text-stone-900 dark:text-slate-100 flex items-center justify-center p-4 selection:bg-brand-500 selection:text-white relative overflow-hidden transition-colors">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-500/10 dark:bg-brand-500/10 rounded-full blur-[140px] pointer-events-none"></div>
 
-      <div className="glass-card max-w-md w-full p-6 sm:p-8 rounded-3xl relative z-10 border border-slate-800/80 shadow-2xl backdrop-blur-xl">
+      <div className="glass-card max-w-md w-full p-6 sm:p-8 rounded-3xl relative z-10 border border-[#EADBCC] dark:border-slate-800/80 shadow-2xl backdrop-blur-xl bg-white dark:bg-slate-900/90">
         {/* Back Button */}
         <div className="mb-4">
           <button
@@ -305,7 +298,7 @@ export const CustomerLogin: React.FC = () => {
                 navigate('/');
               }
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold border border-slate-700/50 hover:border-slate-600 transition-all group"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-slate-800/80 hover:bg-stone-200 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white text-xs font-semibold border border-stone-200 dark:border-slate-700/50 hover:border-stone-300 dark:hover:border-slate-600 transition-all group"
           >
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
             <span>{step === 'VERIFY' ? 'Back' : 'Back to Home'}</span>
@@ -318,26 +311,26 @@ export const CustomerLogin: React.FC = () => {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
               <UtensilsCrossed className="w-5 h-5" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-white">
-              Restaurant<span className="text-brand-400">Flow</span>
+            <span className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
+              Restaurant<span className="text-brand-600 dark:text-brand-400">Flow</span>
             </span>
           </Link>
-          <h2 className="text-xl font-bold text-slate-100">Customer Login</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Sign in with your Email Address to receive a verification code
+          <h2 className="text-xl font-bold text-stone-900 dark:text-slate-100">Customer Login</h2>
+          <p className="text-xs text-stone-500 dark:text-slate-400 mt-1">
+            Sign in with your Email Address or one-click Google access
           </p>
         </div>
 
         {/* Error / Success Alerts */}
         {error && (
-          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 animate-shake">
+          <div className="mb-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs flex items-center gap-2 animate-shake">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
             <span>{successMsg}</span>
           </div>
@@ -349,44 +342,40 @@ export const CustomerLogin: React.FC = () => {
         {step === 'INPUT' && (
           <div className="space-y-4">
             {/* Google Sign-In Option */}
-            <div className="space-y-2">
-              <div ref={googleBtnContainerRef} className="flex justify-center empty:hidden"></div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md transition-all border border-slate-200 active:scale-[0.99] disabled:opacity-50"
-              >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-stone-50 dark:bg-slate-800/90 dark:hover:bg-slate-800 text-stone-800 dark:text-slate-100 font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all border border-[#E2DDD3] dark:border-slate-700/80 hover:border-stone-300 dark:hover:border-slate-600 active:scale-[0.99] disabled:opacity-50"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
 
             {/* Divider */}
             <div className="flex items-center gap-3 my-4">
-              <div className="flex-1 h-px bg-slate-800"></div>
-              <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
+              <div className="flex-1 h-px bg-stone-200 dark:bg-slate-800"></div>
+              <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider text-stone-500 dark:text-slate-500 uppercase">
                 Or Continue With Email
               </span>
-              <div className="flex-1 h-px bg-slate-800"></div>
+              <div className="flex-1 h-px bg-stone-200 dark:bg-slate-800"></div>
             </div>
 
             <form
@@ -397,45 +386,45 @@ export const CustomerLogin: React.FC = () => {
               className="space-y-4"
             >
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-semibold text-stone-700 dark:text-slate-300 mb-1.5">
                   Email Address
                 </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-                <input
-                  type="email"
-                  required
-                  value={emailAddress}
-                  onChange={(e) => setEmailAddress(e.target.value)}
-                  placeholder="Enter your email (e.g. name@gmail.com)"
-                  className="glass-input pl-10 text-sm"
-                  autoFocus
-                />
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-stone-400 dark:text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={emailAddress}
+                    onChange={(e) => setEmailAddress(e.target.value)}
+                    placeholder="Enter your email (e.g. name@gmail.com)"
+                    className="glass-input pl-10 text-sm bg-[#FAF8F5] dark:bg-slate-950 text-stone-900 dark:text-white border-[#E2DDD3] dark:border-slate-800"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1.5 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+                  We will send a 6-digit verification code to your email.
+                </p>
               </div>
-              <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-brand-400" />
-                We will send a 6-digit verification code to your email.
-              </p>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading || !emailAddress.includes('@')}
-              className="btn-primary w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-glow mt-2 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <RotateCw className="w-4 h-4 animate-spin" />
-                  Sending Verification Code...
-                </>
-              ) : (
-                <>
-                  Send Verification Code
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading || !emailAddress.includes('@')}
+                className="btn-primary w-full py-3.5 text-sm font-bold flex items-center justify-center gap-2 shadow-glow mt-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                    Sending Verification Code...
+                  </>
+                ) : (
+                  <>
+                    Send Verification Code
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         )}
 
@@ -444,9 +433,9 @@ export const CustomerLogin: React.FC = () => {
         {/* ========================================================================= */}
         {step === 'VERIFY' && (
           <div className="space-y-5">
-            <div className="text-center p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800">
-              <div className="text-xs text-slate-400">Enter the 6-digit code sent to:</div>
-              <div className="text-sm font-bold text-brand-400 mt-0.5 flex items-center justify-center gap-1.5 font-mono">
+            <div className="text-center p-3.5 rounded-2xl bg-stone-50 dark:bg-slate-950/60 border border-[#EADBCC] dark:border-slate-800">
+              <div className="text-xs text-stone-600 dark:text-slate-400">Enter the 6-digit code sent to:</div>
+              <div className="text-sm font-bold text-brand-600 dark:text-brand-400 mt-0.5 flex items-center justify-center gap-1.5 font-mono">
                 <Mail className="w-3.5 h-3.5" />
                 <span>{maskedEmail || emailAddress}</span>
               </div>
@@ -457,7 +446,7 @@ export const CustomerLogin: React.FC = () => {
                   setError(null);
                   setSuccessMsg(null);
                 }}
-                className="text-[11px] text-slate-400 hover:text-white underline mt-1.5 inline-block"
+                className="text-[11px] text-stone-500 hover:text-stone-900 dark:text-slate-400 dark:hover:text-white underline mt-1.5 inline-block"
               >
                 Change Email Address
               </button>
@@ -466,10 +455,10 @@ export const CustomerLogin: React.FC = () => {
             {/* 6 Digit Numeric Input Cells */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-stone-700 dark:text-slate-300">
                   Verification Code
                 </label>
-                <span className={`text-[11px] font-mono font-semibold ${expirySeconds < 60 ? 'text-rose-400' : 'text-slate-400'}`}>
+                <span className={`text-[11px] font-mono font-semibold ${expirySeconds < 60 ? 'text-rose-500 dark:text-rose-400' : 'text-stone-500 dark:text-slate-400'}`}>
                   Expires in {formatTimer(expirySeconds)}
                 </span>
               </div>
@@ -486,7 +475,7 @@ export const CustomerLogin: React.FC = () => {
                     onChange={(e) => handleOtpChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
                     onPaste={handlePaste}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold bg-slate-950 border border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 rounded-xl text-white outline-none transition"
+                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold bg-[#FAF8F5] dark:bg-slate-950 border border-[#E2DDD3] dark:border-slate-800 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 rounded-xl text-stone-900 dark:text-white outline-none transition"
                   />
                 ))}
               </div>
@@ -518,14 +507,14 @@ export const CustomerLogin: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSendOtp(emailAddress)}
-                  className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition flex items-center gap-1 mx-auto"
+                  className="text-xs font-semibold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300 transition flex items-center gap-1 mx-auto"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                   Resend Verification Code
                 </button>
               ) : (
-                <span className="text-xs text-slate-500">
-                  Resend code in <strong className="text-slate-400 font-mono">{resendCooldown}s</strong>
+                <span className="text-xs text-stone-500 dark:text-slate-500">
+                  Resend code in <strong className="text-stone-700 dark:text-slate-400 font-mono">{resendCooldown}s</strong>
                 </span>
               )}
             </div>

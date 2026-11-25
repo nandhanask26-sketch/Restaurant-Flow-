@@ -16,7 +16,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
       return this.transporter;
     }
 
-    const gmailUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+    const gmailUser = (env.GMAIL_USER || 'nalansmess@gmail.com').trim();
     const gmailPass = (env.GMAIL_APP_PASSWORD || 'huefqczeusvdbsed').replace(/\s+/g, '');
 
     if (gmailUser && gmailPass) {
@@ -106,7 +106,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
       if (!accessToken) return false;
 
       // 2. Build RFC 2822 MIME message
-      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const senderUser = (env.GMAIL_USER || 'nalansmess@gmail.com').trim();
       const utf8Subject = `=?utf-8?B?${Buffer.from(mailOptions.subject).toString('base64')}?=`;
       const mimeLines = [
         `From: "Nalan's Mess" <${senderUser}>`,
@@ -165,7 +165,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
       html: string;
     }
   ): Promise<boolean> {
-    const gmailUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+    const gmailUser = (env.GMAIL_USER || 'nalansmess@gmail.com').trim();
     const gmailPass = (env.GMAIL_APP_PASSWORD || 'huefqczeusvdbsed').replace(/\s+/g, '');
 
     if (!gmailUser || !gmailPass) return false;
@@ -254,7 +254,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
-      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const senderUser = (env.GMAIL_USER || 'nalansmess@gmail.com').trim();
       const mailOptions = {
         from: `"Nalan's Mess" <${senderUser}>`,
         replyTo: "Nalan'smess@gmail.com",
@@ -299,7 +299,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
 
       if (env.BREVO_API_KEY) {
         try {
-          const senderEmail = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+          const senderEmail = (env.GMAIL_USER || 'nalansmess@gmail.com').trim();
           const res = await fetch('https://api.brevo.com/v3/smtp/email', {
             method: 'POST',
             headers: {
@@ -380,7 +380,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
         </html>
       `;
 
-      const senderUser = (env.GMAIL_USER || 'nandhanask26@gmail.com').trim();
+      const senderUser = (env.GMAIL_USER || 'nalansmess@gmail.com').trim();
       const mailOptions = {
         from: `"Nalan's Mess" <${senderUser}>`,
         replyTo: "Nalan'smess@gmail.com",
@@ -426,7 +426,7 @@ export class NodemailerEmailProvider implements IEmailProvider {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              sender: { name: "Nalan's Mess", email: (env.GMAIL_USER || 'nandhanask26@gmail.com').trim() },
+              sender: { name: "Nalan's Mess", email: (env.GMAIL_USER || 'nalansmess@gmail.com').trim() },
               to: [{ email: toEmail, name: fullName || 'Customer' }],
               replyTo: { email: "Nalan'smess@gmail.com", name: "Nalan's Mess" },
               subject: `🔐 ${otp} is your Nalan's Mess Password Security Code`,

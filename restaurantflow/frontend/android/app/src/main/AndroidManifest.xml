@@ -23,6 +23,25 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Custom URL Scheme for Google OAuth App Deep Link -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="restaurantflow" android:host="auth" />
+            </intent-filter>
+
+            <!-- Web App Link for Google OAuth Callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="restaurantflow-frontend.onrender.com"
+                    android:pathPrefix="/auth/google/callback" />
+            </intent-filter>
+
         </activity>
 
         <provider

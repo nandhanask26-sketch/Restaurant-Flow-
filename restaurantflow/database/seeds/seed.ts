@@ -93,7 +93,7 @@ export async function runSeed(): Promise<void> {
       `INSERT INTO users (full_name, email, phone, password_hash, role)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (email) DO NOTHING;`,
-      ['Nandhana S K', 'nandhanask26@gmail.com', '+919751502017', nandhaHash, 'CUSTOMER']
+      ['Nandhana S K', 'nalansmess@gmail.com', '+919751502017', nandhaHash, 'CUSTOMER']
     );
 
     // 3. Create Restaurant
@@ -884,7 +884,7 @@ export async function runSeed(): Promise<void> {
     console.log('----------------------------------------------------');
     console.log('📌 DEMO LOGIN CREDENTIALS:');
     console.log('  👨‍💼 Restaurant Manager: manager@example.com / Password123!');
-    console.log('  👤 Customer:           nandhanask26@gmail.com / Password123!');
+    console.log('  👤 Customer:           nalansmess@gmail.com / Password123!');
     console.log('  👤 Demo Customer:      customer@example.com / Password123!');
     console.log("  🏪 Restaurant:         Nalan's Mess");
     console.log('----------------------------------------------------');

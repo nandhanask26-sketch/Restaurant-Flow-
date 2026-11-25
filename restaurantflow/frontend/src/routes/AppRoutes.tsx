@@ -5,6 +5,7 @@ import { CustomerLogin } from '../pages/CustomerLogin';
 import { ManagerLogin } from '../pages/ManagerLogin';
 import { RegisterCustomer } from '../pages/RegisterCustomer';
 import { RegisterManager } from '../pages/RegisterManager';
+import { GoogleAuthCallback } from '../pages/GoogleAuthCallback';
 
 // Layouts
 import { CustomerLayout } from '../layouts/CustomerLayout';
@@ -73,6 +74,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/manager/login" element={<PublicOnlyRoute><ManagerLogin /></PublicOnlyRoute>} />
       <Route path="/register/customer" element={<PublicOnlyRoute><RegisterCustomer /></PublicOnlyRoute>} />
       <Route path="/register/manager" element={<PublicOnlyRoute><RegisterManager /></PublicOnlyRoute>} />
+      <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
 
       {/* Customer Protected Routes */}
       <Route element={<ProtectedRoute allowedRoles={['CUSTOMER', 'ADMIN']} />}>

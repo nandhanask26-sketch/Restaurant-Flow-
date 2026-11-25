@@ -1,15 +1,30 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 
 // Smart API Base URL resolver: adapts to Render Cloud, Custom Domain, or Local Dev
 export function getApiBaseUrl(): string {
-  if (typeof window !== 'undefined') {
-    // Only local Vite development server proxies /api to localhost:5000
-    if (window.location.hostname === 'localhost' && window.location.port === '5173') {
-      return '/api';
+  // 1. If running as a Native Mobile APK (Capacitor on Android/iOS)
+  if (Capacitor.isNativePlatform()) {
+    const envUrl = import.meta.env.VITE_API_URL;
+    // Only use VITE_API_URL if it is an external/network URL, never localhost on phone
+    if (
+      envUrl &&
+      (envUrl.startsWith('http://') || envUrl.startsWith('https://')) &&
+      !envUrl.includes('localhost') &&
+      !envUrl.includes('127.0.0.1')
+    ) {
+      return envUrl.endsWith('/api') ? envUrl : `${envUrl.replace(/\/$/, '')}/api`;
     }
+    // Default to the live Render cloud backend
+    return 'https://restaurantflow-backend.onrender.com/api';
+  }
 
-    // Check if running inside local network IP dev
-    if (window.location.hostname === '10.18.101.206' && window.location.port === '5173') {
+  // 2. If running in web browser during local development with Vite dev server
+  if (typeof window !== 'undefined') {
+    if (
+      window.location.port === '5173' ||
+      window.location.port === '5174'
+    ) {
       return '/api';
     }
   }

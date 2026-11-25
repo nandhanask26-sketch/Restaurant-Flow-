@@ -104,13 +104,13 @@ export const ManagerLogin: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-4">
-      <div className="w-full max-w-md glass-card p-8 bg-slate-900/90 border-slate-800 rounded-3xl shadow-2xl">
+    <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0B0F17] text-stone-900 dark:text-slate-100 flex items-center justify-center p-4 transition-colors">
+      <div className="w-full max-w-md glass-card p-8 bg-white dark:bg-slate-900/90 border border-[#EADBCC] dark:border-slate-800 rounded-3xl shadow-2xl">
         {/* Back Navigation Button */}
         <div className="mb-4">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-semibold border border-slate-700/50 hover:border-slate-600 transition-all group"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-slate-800/80 hover:bg-stone-200 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white text-xs font-semibold border border-stone-200 dark:border-slate-700/50 hover:border-stone-300 dark:hover:border-slate-600 transition-all group"
           >
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
             <span>Back to Home</span>
@@ -121,15 +121,15 @@ export const ManagerLogin: React.FC = () => {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
               <ChefHat className="w-6 h-6" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-white">
-              Restaurant<span className="text-amber-400">Flow</span>
+            <span className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
+              Restaurant<span className="text-amber-500 dark:text-amber-400">Flow</span>
             </span>
           </Link>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-300 text-xs font-semibold mb-2">
             <span>Restaurant Management Portal</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-100">Manager Sign In</h2>
-          <p className="text-xs text-slate-400 mt-1">Access your restaurant dashboard, orders, and live analytics</p>
+          <h2 className="text-xl font-bold text-stone-900 dark:text-slate-100">Manager Sign In</h2>
+          <p className="text-xs text-stone-500 dark:text-slate-400 mt-1">Access your restaurant dashboard, orders, and live analytics</p>
         </div>
 
         {error && (

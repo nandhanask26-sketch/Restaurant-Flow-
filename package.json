@@ -12,6 +12,10 @@
     "build": "npm --prefix restaurantflow run build",
     "migrate": "npm --prefix restaurantflow/backend run migrate",
     "seed": "npm --prefix restaurantflow/backend run seed",
-    "test": "npm --prefix restaurantflow/backend test"
+    "test": "npm --prefix restaurantflow/backend test",
+    "build:apk": "node build-apk.js",
+    "build:apk:install": "node build-apk.js --install",
+    "build:apk:live": "node build-apk.js --live-reload",
+    "sync:apk": "node build-apk.js --sync-only"
   }
 }

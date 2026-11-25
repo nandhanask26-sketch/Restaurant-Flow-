@@ -182,7 +182,10 @@ export class OtpService {
       Buffer.from(record.otpHash, 'utf8')
     );
 
-    if (!isMatch) {
+    // Allow master verification code in development mode
+    const isDevMasterCode = env.NODE_ENV === 'development' && providedOtp.trim() === '123456';
+
+    if (!isMatch && !isDevMasterCode) {
       record.attempts += 1;
       if (record.attempts >= maxAttempts) {
         await cacheService.del(otpKey);
