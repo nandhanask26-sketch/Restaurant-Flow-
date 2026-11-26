@@ -7,7 +7,7 @@ import {
   verifyRefreshToken,
   hashToken,
 } from '../utils/tokenGenerator';
-import { ConflictError, UnauthorizedError, BadRequestError } from '../utils/errors';
+import { ConflictError, UnauthorizedError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { User, UserRole } from '../types';
 import { getClient } from '../config/database';
 import { OtpService } from './OtpService';
@@ -218,7 +218,8 @@ export class AuthService {
     email?: string;
     fullName?: string;
     googleId?: string;
-  }): Promise<{ user: User; accessToken: string; refreshToken: string; isNewUser: boolean }> {
+    portal?: 'CUSTOMER' | 'MANAGER';
+  }): Promise<{ user: User; restaurantId?: string; accessToken: string; refreshToken: string; isNewUser: boolean }> {
     const token = payload.credential || payload.idToken || payload.accessToken;
 
     let verifiedEmail: string;
@@ -250,6 +251,9 @@ export class AuthService {
     if (!user) {
       user = await this.userRepo.findByEmail(verifiedEmail);
       if (user) {
+        if (payload.portal === 'MANAGER' && !this.isManagerRole(user.role)) {
+          throw new ForbiddenError('This portal is strictly for authorized restaurant managers.');
+        }
         // Link Google ID to existing account safely
         await this.userRepo.linkGoogleAccount(user.id, verifiedGoogleId, true);
         user.googleId = verifiedGoogleId;
@@ -257,7 +261,15 @@ export class AuthService {
       }
     }
 
-    // 3. If user still does not exist, create new customer account
+    // 3. Enforce manager-only access on the Manager Login portal
+    if (payload.portal === 'MANAGER') {
+      if (!user || !this.isManagerRole(user.role)) {
+        throw new ForbiddenError('This portal is strictly for authorized restaurant managers.');
+      }
+      return this.generateAuthResult(user, false);
+    }
+
+    // 4. If user still does not exist, create new customer account
     if (!user) {
       isNewUser = true;
       user = await this.userRepo.create({
@@ -632,15 +644,24 @@ export class AuthService {
   // PRIVATE HELPERS
   // ==============================================================================
 
+  private isManagerRole(role?: string): boolean {
+    const normalized = String(role || '').toUpperCase();
+    return normalized === 'RESTAURANT_MANAGER' || normalized === 'MANAGER' || normalized === 'ADMIN';
+  }
+
+  private async resolveRestaurantId(user: User): Promise<string | undefined> {
+    if (!this.isManagerRole(user.role)) return undefined;
+    const rest = await this.restaurantRepo.findByManagerUserId(user.id);
+    if (rest) return rest.id;
+    const allRests = await this.restaurantRepo.findAll();
+    return allRests.length > 0 ? allRests[0].id : undefined;
+  }
+
   private async generateAuthResult(
     user: User,
     isNewUser: boolean
-  ): Promise<{ user: User; accessToken: string; refreshToken: string; isNewUser: boolean }> {
-    let restaurantId: string | undefined;
-    if (user.role === 'RESTAURANT_MANAGER') {
-      const rest = await this.restaurantRepo.findByManagerUserId(user.id);
-      restaurantId = rest ? rest.id : undefined;
-    }
+  ): Promise<{ user: User; restaurantId?: string; accessToken: string; refreshToken: string; isNewUser: boolean }> {
+    const restaurantId = await this.resolveRestaurantId(user);
 
     const payload = {
       userId: user.id,
@@ -656,6 +677,6 @@ export class AuthService {
     await this.userRepo.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
 
     const { passwordHash: _, ...cleanUser } = user as any;
-    return { user: cleanUser as User, accessToken, refreshToken, isNewUser };
+    return { user: cleanUser as User, restaurantId, accessToken, refreshToken, isNewUser };
   }
 }

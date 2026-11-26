@@ -28,18 +28,23 @@ export const GoogleAuthCallback: React.FC = () => {
           queryParams.get('token') ||
           queryParams.get('access_token');
 
+        const state = hashParams.get('state') || queryParams.get('state') || '';
+        const portal = state.toLowerCase() === 'manager' ? 'MANAGER' : 'CUSTOMER';
+        const loginRoute = portal === 'MANAGER' ? '/manager/login' : '/login';
+
         if (!idToken) {
           setError('No authentication token received from Google.');
-          setTimeout(() => navigate('/login'), 2500);
+          setTimeout(() => navigate(loginRoute), 2500);
           return;
         }
 
         const { data } = await apiClient.post('/auth/google', {
           credential: idToken,
+          portal,
         });
 
-        const { user, accessToken, refreshToken } = data.data;
-        setAuth(user, accessToken, refreshToken);
+        const { user, accessToken, refreshToken, restaurantId } = data.data;
+        setAuth(user, accessToken, refreshToken, restaurantId || undefined);
         setSuccess(true);
 
         const isManager =
@@ -72,8 +77,12 @@ export const GoogleAuthCallback: React.FC = () => {
           }, 1500);
         }
       } catch (err: any) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const queryParams = new URLSearchParams(window.location.search);
+        const state = hashParams.get('state') || queryParams.get('state') || '';
+        const loginRoute = state.toLowerCase() === 'manager' ? '/manager/login' : '/login';
         setError(err.response?.data?.message || 'Google sign-in verification failed.');
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => navigate(loginRoute), 3000);
       }
     };
 

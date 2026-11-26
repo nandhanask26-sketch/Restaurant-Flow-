@@ -95,9 +95,12 @@ export class AuthController {
   googleAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.authService.authenticateWithGoogle(req.body);
+      const role = String(result.user.role || '').toUpperCase();
+      const isManager = role === 'RESTAURANT_MANAGER' || role === 'MANAGER' || role === 'ADMIN';
 
-      await this.auditService.record('CUSTOMER_GOOGLE_LOGIN', 'USER', {
+      await this.auditService.record(isManager ? 'MANAGER_GOOGLE_LOGIN' : 'CUSTOMER_GOOGLE_LOGIN', 'USER', {
         userId: result.user.id,
+        restaurantId: result.restaurantId,
         metadata: {
           email: result.user.email,
           isNewUser: result.isNewUser,

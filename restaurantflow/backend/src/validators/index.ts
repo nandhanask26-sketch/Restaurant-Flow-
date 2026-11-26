@@ -70,6 +70,7 @@ export const googleAuthSchema = z.object({
   email: z.string().email().optional(),
   fullName: z.string().optional(),
   googleId: z.string().optional(),
+  portal: z.enum(['CUSTOMER', 'MANAGER']).optional(),
 });
 
 export const sendLoginOtpSchema = z.object({

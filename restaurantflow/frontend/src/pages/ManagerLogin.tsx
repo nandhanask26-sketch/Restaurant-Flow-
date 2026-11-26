@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { apiClient, getApiBaseUrl } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export const ManagerLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -133,11 +134,38 @@ export const ManagerLogin: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
+
+        {/* Google Sign-In Option */}
+        <div className="mb-4">
+          <GoogleSignInButton
+            portal="MANAGER"
+            disabled={loading}
+            onLoadingChange={setLoading}
+            onError={setError}
+            onSuccess={({ user: loggedUser, accessToken, refreshToken, restaurantId }) => {
+              const role = String(loggedUser?.role || '').toUpperCase();
+              if (role !== 'RESTAURANT_MANAGER' && role !== 'MANAGER' && role !== 'ADMIN') {
+                setError('This portal is strictly for authorized restaurant managers.');
+                return;
+              }
+              setAuth(loggedUser, accessToken, refreshToken, restaurantId || undefined);
+              navigate('/manager/dashboard');
+            }}
+          />
+
+          <div className="flex items-center gap-3 mt-4">
+            <div className="flex-1 h-px bg-stone-200 dark:bg-slate-800"></div>
+            <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider text-stone-500 dark:text-slate-500 uppercase">
+              Or Sign In With Email
+            </span>
+            <div className="flex-1 h-px bg-stone-200 dark:bg-slate-800"></div>
+          </div>
+        </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
