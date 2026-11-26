@@ -23,11 +23,16 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { useCartStore } from '../../store/cartStore';
 import { apiClient } from '../../api/client';
-import { PaymentMethod } from '../../types';
+import { PaymentMethod, Restaurant } from '../../types';
 import { EmptyState } from '../../components/EmptyState';
+import { useSocket } from '../../hooks/useSocket';
+import { SOCKET_EVENTS } from '../../types/socketEvents';
 
 export const CustomerCartPage: React.FC = () => {
-  const { restaurantStatus } = useOutletContext<{ restaurantStatus?: boolean }>();
+  const { restaurantStatus, restaurantId: outletRestaurantId } = useOutletContext<{
+    restaurantStatus?: boolean;
+    restaurantId?: string;
+  }>();
   const {
     items,
     restaurantId,
@@ -51,6 +56,23 @@ export const CustomerCartPage: React.FC = () => {
   const [couponApplied, setCouponApplied] = useState(false);
 
   const navigate = useNavigate();
+  const activeRestId = restaurantId || outletRestaurantId || null;
+  const { on, off, socketVersion } = useSocket(activeRestId);
+
+  useEffect(() => {
+    const handleRestaurantUpdated = (updated: Restaurant) => {
+      if (!activeRestId || updated.id === activeRestId) {
+        if (updated.upiId !== undefined) setUpiId(updated.upiId || 'nandhanask26@oksbi');
+        if (updated.upiName !== undefined) setUpiName(updated.upiName || 'SK');
+        if (updated.qrCodeUrl !== undefined) setQrCodeUrl(updated.qrCodeUrl || null);
+      }
+    };
+
+    on(SOCKET_EVENTS.RESTAURANT_UPDATED, handleRestaurantUpdated);
+    return () => {
+      off(SOCKET_EVENTS.RESTAURANT_UPDATED, handleRestaurantUpdated);
+    };
+  }, [activeRestId, on, off, socketVersion]);
 
   useEffect(() => {
     async function loadRestaurantAndSyncCart() {
@@ -58,9 +80,9 @@ export const CustomerCartPage: React.FC = () => {
         const res = await apiClient.get('/restaurants');
         if (res.data?.data?.length > 0) {
           const rest = res.data.data[0];
-          if (rest.upiId) setUpiId(rest.upiId);
-          if (rest.upiName) setUpiName(rest.upiName);
-          if (rest.qrCodeUrl) setQrCodeUrl(rest.qrCodeUrl);
+          setUpiId(rest.upiId || 'nandhanask26@oksbi');
+          setUpiName(rest.upiName || 'SK');
+          setQrCodeUrl(rest.qrCodeUrl || null);
 
           // Authoritatively synchronize cart items with current database food catalog
           const foodsRes = await apiClient.get(`/foods?restaurantId=${rest.id}`);

@@ -35,9 +35,10 @@ import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 const DEFAULT_COVER = '/images/restaurant_interior_nalan.jpg';
 
 export const ManagerRestaurantProfilePage: React.FC = () => {
-  const { restaurantId, setRestaurantName } = useOutletContext<{
+  const { restaurantId, setRestaurantName, setRestaurantStatus } = useOutletContext<{
     restaurantId?: string;
     setRestaurantName?: (name: string) => void;
+    setRestaurantStatus?: (isOpen: boolean) => void;
   }>();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -66,6 +67,8 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
     qrCodeUrl: '',
     isOpen: true,
   });
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
 
   // Real-time clock ticker
   useEffect(() => {
@@ -102,8 +105,8 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
               email: data.email || '',
               upiId: data.upiId || 'nandhanask26@oksbi',
               upiName: data.upiName || 'SK Nandhana',
-              openingTime: data.openingTime || '08:00',
-              closingTime: data.closingTime || '22:00',
+              openingTime: (data.openingTime || '08:00').slice(0, 5),
+              closingTime: (data.closingTime || '22:00').slice(0, 5),
               imageUrl: (data.imageUrl && !data.imageUrl.includes('unsplash.com')) ? data.imageUrl : DEFAULT_COVER,
               qrCodeUrl: data.qrCodeUrl || '',
               isOpen: data.isOpen ?? true,
@@ -132,12 +135,21 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await apiClient.patch(`/restaurants/${restaurant.id}`, dataToSave);
+      const payload = {
+        ...dataToSave,
+        email: dataToSave.email?.trim() ? dataToSave.email.trim() : null,
+        openingTime: dataToSave.openingTime?.slice(0, 5),
+        closingTime: dataToSave.closingTime?.slice(0, 5),
+      };
+      const res = await apiClient.patch(`/restaurants/${restaurant.id}`, payload);
       const updated: Restaurant = res.data?.data;
       if (updated) {
         setRestaurant(updated);
         if (setRestaurantName && updated.name) {
           setRestaurantName(updated.name);
+        }
+        if (setRestaurantStatus && updated.isOpen !== undefined) {
+          setRestaurantStatus(updated.isOpen);
         }
       }
       setSaveStatus('saved');
@@ -167,7 +179,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const maxDim = 1600;
+        const maxDim = 1200;
 
         if (width > maxDim || height > maxDim) {
           if (width > height) {
@@ -182,17 +194,16 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        let nextImageUrl = rawDataUrl;
         if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-          const updated = { ...formData, imageUrl: optimizedDataUrl };
-          setFormData(updated);
-          executeSave(updated);
-        } else {
-          const updated = { ...formData, imageUrl: rawDataUrl };
-          setFormData(updated);
-          executeSave(updated);
+          nextImageUrl = canvas.toDataURL('image/jpeg', 0.84);
         }
+        const updated = { ...formDataRef.current, imageUrl: nextImageUrl };
+        setFormData(updated);
+        executeSave(updated);
       };
       img.src = rawDataUrl;
     };
@@ -264,6 +275,7 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
       const updatedRest: Restaurant = res.data?.data;
       if (updatedRest) {
         setRestaurant(updatedRest);
+        setRestaurantStatus?.(updatedRest.isOpen);
       }
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2500);
@@ -413,11 +425,11 @@ export const ManagerRestaurantProfilePage: React.FC = () => {
         </div>
 
         {/* Right Column: High Quality Restaurant Photo & Floating Badge */}
-        <div className="lg:col-span-6 relative min-h-[380px] lg:min-h-[520px] bg-stone-200 dark:bg-stone-800">
+        <div className="lg:col-span-6 relative h-[340px] sm:h-[420px] lg:h-auto lg:min-h-[520px] overflow-hidden bg-stone-200 dark:bg-stone-800">
           <img
             src={formData.imageUrl || DEFAULT_COVER}
             alt={formData.name || 'Restaurant Dining'}
-            className="w-full h-full object-cover"
+            className="lg:absolute lg:inset-0 w-full h-full object-cover object-center"
             onError={(e) => {
               (e.target as HTMLImageElement).src = DEFAULT_COVER;
             }}

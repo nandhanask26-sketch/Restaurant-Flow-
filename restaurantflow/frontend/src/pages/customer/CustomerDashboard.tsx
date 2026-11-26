@@ -19,15 +19,31 @@ import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { useSocket } from '../../hooks/useSocket';
 import { SOCKET_EVENTS } from '../../types/socketEvents';
 
+const DEFAULT_COVER = '/images/restaurant_interior_nalan.jpg';
+const FALLBACK_FEAST_COVER = '/images/south_indian_dosa_feast.jpg';
+
 export const CustomerDashboard: React.FC = () => {
-  const { restaurantStatus, restaurantId } = useOutletContext<{
+  const {
+    restaurant: layoutRestaurant,
+    restaurantStatus,
+    restaurantId,
+  } = useOutletContext<{
+    restaurant?: Restaurant | null;
     restaurantStatus?: boolean;
     restaurantId?: string;
   }>();
 
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(layoutRestaurant || null);
+  const [loading, setLoading] = useState(!layoutRestaurant);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Keep synced whenever CustomerLayout receives fresh restaurant data or socket updates
+  useEffect(() => {
+    if (layoutRestaurant) {
+      setRestaurant((prev) => (prev ? { ...prev, ...layoutRestaurant } : layoutRestaurant));
+      setLoading(false);
+    }
+  }, [layoutRestaurant]);
 
   // Real-time live clock ticker
   useEffect(() => {
@@ -37,12 +53,12 @@ export const CustomerDashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch restaurant details
+  // Fetch restaurant details on mount / target change and when returning to tab
   useEffect(() => {
     let isMounted = true;
 
-    async function loadData() {
-      setLoading(true);
+    async function loadData(showLoader = false) {
+      if (showLoader && !layoutRestaurant) setLoading(true);
       try {
         let targetId = restaurantId;
         if (!targetId) {
@@ -67,24 +83,36 @@ export const CustomerDashboard: React.FC = () => {
       }
     }
 
-    loadData();
+    loadData(!layoutRestaurant);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadData(false);
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
     return () => {
       isMounted = false;
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, [restaurantId]);
 
   // Real-time WebSocket listener for automatic live updates from manager
-  const { on, off } = useSocket();
+  const activeRestaurantId = restaurant?.id || restaurantId || null;
+  const { on, off, socketVersion } = useSocket(activeRestaurantId);
   useEffect(() => {
     const handleRestaurantUpdated = (updatedRestaurant: Restaurant) => {
-      if (!restaurantId || updatedRestaurant.id === restaurantId) {
+      if (!activeRestaurantId || updatedRestaurant.id === activeRestaurantId) {
         setRestaurant((prev) => (prev ? { ...prev, ...updatedRestaurant } : updatedRestaurant));
       }
     };
 
     const handleStatusChanged = (data: { restaurantId: string; isOpen: boolean }) => {
-      if (!restaurantId || data.restaurantId === restaurantId) {
+      if (!activeRestaurantId || data.restaurantId === activeRestaurantId) {
         setRestaurant((prev) => (prev ? { ...prev, isOpen: data.isOpen } : null));
       }
     };
@@ -96,7 +124,7 @@ export const CustomerDashboard: React.FC = () => {
       off(SOCKET_EVENTS.RESTAURANT_UPDATED, handleRestaurantUpdated);
       off(SOCKET_EVENTS.RESTAURANT_STATUS_CHANGED, handleStatusChanged);
     };
-  }, [restaurantId, on, off]);
+  }, [activeRestaurantId, on, off, socketVersion]);
 
   // Format 24hr time to 12hr AM/PM
   const formatTime12h = (timeStr?: string) => {
@@ -117,7 +145,11 @@ export const CustomerDashboard: React.FC = () => {
     );
   }
 
-  const restaurantDisplayName = restaurant?.name || 'cvbnmAuthentic Mess & Cafe';
+  const restaurantDisplayName = restaurant?.name || "Nalan's Mess";
+  const heroImageUrl =
+    restaurant?.imageUrl && !restaurant.imageUrl.includes('unsplash.com')
+      ? restaurant.imageUrl
+      : DEFAULT_COVER;
   const openTimeDisplay = formatTime12h(restaurant?.openingTime || '07:00');
   const closeTimeDisplay = formatTime12h(restaurant?.closingTime || '23:30');
   const formattedDate = currentTime.toLocaleDateString('en-US', {
@@ -196,12 +228,18 @@ export const CustomerDashboard: React.FC = () => {
 
           </div>
 
-          {/* Right Column: Hero Feast Image with Golden Dosa, Idlis on Banana Leaf & Filter Coffee */}
-          <div className="lg:col-span-6 xl:col-span-6 relative min-h-[340px] sm:min-h-[440px] lg:min-h-full overflow-hidden bg-stone-900 group">
+          {/* Right Column: Live Restaurant Showcase Photo (syncs from Manager Restaurant Profile) */}
+          <div className="lg:col-span-6 xl:col-span-6 relative h-[340px] sm:h-[440px] lg:h-auto lg:min-h-full overflow-hidden bg-stone-900 group">
             <img
-              src="/images/south_indian_dosa_feast.jpg"
-              alt="Authentic South Indian Feast"
-              className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              src={heroImageUrl}
+              alt={restaurantDisplayName}
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (!img.src.endsWith(FALLBACK_FEAST_COVER)) {
+                  img.src = FALLBACK_FEAST_COVER;
+                }
+              }}
+              className="lg:absolute lg:inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
             />
 
             {/* Subtle Edge Vignette */}

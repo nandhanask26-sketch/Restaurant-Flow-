@@ -8,23 +8,28 @@ import { useSocket } from '../hooks/useSocket';
 import { apiClient } from '../api/client';
 import { SOCKET_EVENTS } from '../types/socketEvents';
 import { useCartStore } from '../store/cartStore';
+import { Restaurant } from '../types';
 
 export const CustomerLayout: React.FC = () => {
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantStatus, setRestaurantStatus] = useState<boolean | undefined>(undefined);
   const [restaurantName, setRestaurantName] = useState<string>('');
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const { getItemCount } = useCartStore();
   const cartCount = getItemCount();
 
-  const { on, off } = useSocket(restaurantId);
+  const { on, off, socketVersion } = useSocket(restaurantId);
 
-  // Fetch initial restaurant status and name from database
+  // Fetch initial restaurant status and profile from database, and refresh on tab focus
   useEffect(() => {
+    let isMounted = true;
+
     async function loadRestaurant() {
       try {
         const { data } = await apiClient.get('/restaurants');
-        if (data.data && data.data.length > 0) {
-          const rest = data.data[0];
+        if (isMounted && data.data && data.data.length > 0) {
+          const rest: Restaurant = data.data[0];
+          setRestaurant(rest);
           setRestaurantId(rest.id);
           setRestaurantStatus(rest.isOpen);
           setRestaurantName(rest.name || '');
@@ -33,7 +38,23 @@ export const CustomerLayout: React.FC = () => {
         console.error('Failed to load restaurant info', err);
       }
     }
+
     loadRestaurant();
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadRestaurant();
+      }
+    };
+
+    window.addEventListener('focus', loadRestaurant);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', loadRestaurant);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+    };
   }, []);
 
   // Listen for live status change and profile updates from Manager
@@ -41,11 +62,13 @@ export const CustomerLayout: React.FC = () => {
     const handleStatusChange = (payload: { restaurantId: string; isOpen: boolean }) => {
       if (!restaurantId || payload.restaurantId === restaurantId) {
         setRestaurantStatus(payload.isOpen);
+        setRestaurant((prev) => (prev ? { ...prev, isOpen: payload.isOpen } : prev));
       }
     };
 
-    const handleRestaurantUpdate = (updated: any) => {
+    const handleRestaurantUpdate = (updated: Restaurant) => {
       if (!restaurantId || updated.id === restaurantId) {
+        setRestaurant((prev) => (prev ? { ...prev, ...updated } : updated));
         if (updated.name) setRestaurantName(updated.name);
         if (updated.isOpen !== undefined) setRestaurantStatus(updated.isOpen);
       }
@@ -58,7 +81,7 @@ export const CustomerLayout: React.FC = () => {
       off(SOCKET_EVENTS.RESTAURANT_STATUS_CHANGED, handleStatusChange);
       off(SOCKET_EVENTS.RESTAURANT_UPDATED, handleRestaurantUpdate);
     };
-  }, [on, off, restaurantId]);
+  }, [on, off, restaurantId, socketVersion]);
 
   return (
     <div className="min-h-screen bg-[#F8F5EE] dark:bg-[#0E1217] text-[#1C1917] dark:text-stone-100 flex flex-col pb-20 lg:pb-8 transition-colors duration-200 w-full max-w-full overflow-x-hidden">
@@ -150,7 +173,7 @@ export const CustomerLayout: React.FC = () => {
 
         {/* Main Viewport */}
         <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 min-w-0 overflow-x-hidden">
-          <Outlet context={{ restaurantStatus, restaurantId, restaurantName }} />
+          <Outlet context={{ restaurant, restaurantStatus, restaurantId, restaurantName }} />
         </main>
       </div>
 

@@ -9,7 +9,7 @@ export function getSocketUrl(): string {
       return customServer.replace(/\/$/, '');
     }
 
-    if (window.location.hostname === 'localhost' && window.location.port === '5173') {
+    if (window.location.port === '5173' || window.location.port === '5174') {
       return window.location.origin;
     }
   }
@@ -26,6 +26,7 @@ export function useSocket(restaurantId?: string | null) {
   const socketRef = useRef<Socket | null>(null);
   const { user, accessToken } = useAuthStore();
   const [isConnected, setIsConnected] = useState(false);
+  const [socketVersion, setSocketVersion] = useState(0);
 
   useEffect(() => {
     const socket = io(getSocketUrl(), {
@@ -36,6 +37,7 @@ export function useSocket(restaurantId?: string | null) {
     });
 
     socketRef.current = socket;
+    setSocketVersion((v) => v + 1);
 
     socket.on('connect', () => {
       setIsConnected(true);
@@ -73,6 +75,7 @@ export function useSocket(restaurantId?: string | null) {
   return {
     socket: socketRef.current,
     isConnected,
+    socketVersion,
     emit,
     on,
     off,
